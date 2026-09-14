@@ -1,0 +1,10 @@
+:HL["/_next/static/chunks/850e7eda1bf59aa2.css","style"]
+:HL["/_next/static/media/Montserrat_400-s.p.30677e4b.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/_next/static/media/Montserrat_500-s.p.e43d0783.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/_next/static/media/Montserrat_600-s.p.a00ab17e.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/_next/static/media/Montserrat_700-s.p.2811fc74.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/_next/static/media/Vazirmatn_Bold-s.p.af83fa93.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/_next/static/media/Vazirmatn_Medium-s.p.b4f84bf0.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/_next/static/media/Vazirmatn_Regular-s.p.c2ca23de.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/_next/static/media/Vazirmatn_SemiBold-s.p.4d1decc9.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+0:{"buildId":"y8X_akgG-Df0lwyoOBqIr","tree":{"name":"","paramType":null,"paramKey":"","hasRuntimePrefetch":false,"slots":{"children":{"name":"__PAGE__","paramType":null,"paramKey":"__PAGE__","hasRuntimePrefetch":false,"slots":null,"isRootLayout":false}},"isRootLayout":true},"staleTime":300}

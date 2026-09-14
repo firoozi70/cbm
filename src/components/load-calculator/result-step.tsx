@@ -39,7 +39,8 @@ export function ResultStep({ result, container, onBack, onRestart }: Props) {
         </div>
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 text-xs text-[rgba(0,0,0,0.65)] hover:text-[#0088ff] px-2 py-1 rounded transition-colors"
+          onClick={() => window.print()}
+          className="inline-flex items-center gap-1.5 text-xs text-[rgba(0,0,0,0.65)] hover:text-[#0088ff] px-2 py-2 rounded transition-colors min-h-[44px] sm:min-h-0"
         >
           <Download className="size-3.5" />
           خروجی PDF

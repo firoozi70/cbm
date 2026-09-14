@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import { faNumber, PRODUCT_TYPES } from "@/lib/containers";
 import { Plus, Copy, Trash2, ChevronDown, Link2, Download, Upload, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 export interface ProductRow {
   id: string;
@@ -51,6 +52,7 @@ export function ProductsStep({
   onNext,
 }: Props) {
   const [openType, setOpenType] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const addGroup = () => {
     const newGroup: Group = {
@@ -125,6 +127,91 @@ export function ProductsStep({
 
   const hasProducts = products.length > 0;
 
+  /* ---------- خروجی و ورود JSON ---------- */
+  const handleExport = () => {
+    try {
+      const data = {
+        app: "load-calculator",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        groups,
+        products,
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: "application/json;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `load-products-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast({ title: "خروجی گرفته شد", description: "فایل محصولات با موفقیت ذخیره شد." });
+    } catch {
+      toast({ title: "خطا در گرفتن خروجی", variant: "destructive" });
+    }
+  };
+
+  const handleImportFile = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(String(reader.result));
+        if (!Array.isArray(data.groups) || !Array.isArray(data.products) || data.products.length === 0) {
+          throw new Error("bad format");
+        }
+        const validTypes = PRODUCT_TYPES.map((t) => t.en);
+        const stamp = Date.now();
+        const idMap = new Map<string, string>();
+        const importedGroups: Group[] = data.groups.map((g: { id?: string; name?: string }, i: number) => {
+          const id = `grp-${stamp}-${i}`;
+          idMap.set(String(g.id), id);
+          return { id, name: String(g.name ?? `گروه ${i + 1}`) };
+        });
+        const importedProducts: ProductRow[] = data.products.map((p: Record<string, unknown>, i: number) => {
+          const type = validTypes.includes(String(p.type)) ? String(p.type) : "Boxes";
+          const num = (v: unknown, def = "0") => {
+            const n = parseFloat(String(v));
+            return Number.isFinite(n) && n >= 0 ? String(n) : def;
+          };
+          return {
+            id: `prod-${stamp}-${i}`,
+            groupId: idMap.get(String(p.groupId)) ?? importedGroups[0].id,
+            type,
+            name: String(p.name ?? `محصول ${i + 1}`).slice(0, 60),
+            length: num(p.length, "500"),
+            width: num(p.width, "400"),
+            height: num(p.height, "300"),
+            weight: num(p.weight, "10"),
+            quantity: num(p.quantity, "1"),
+            color: /^#[0-9a-fA-F]{6}$/.test(String(p.color)) ? String(p.color) : "#0088ff",
+            stackable: Boolean(p.stackable),
+            maxStack: num(p.maxStack, "0"),
+          };
+        });
+        setGroups(importedGroups);
+        setProducts(importedProducts);
+        toast({
+          title: "محصولات وارد شد",
+          description: `${faNumber(importedProducts.length)} محصول از فایل خوانده شد.`,
+        });
+      } catch {
+        toast({
+          title: "فایل نامعتبر است",
+          description: "فقط فایل خروجی همین ابزار (JSON) پذیرفته می‌شود.",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div className="bg-white border border-[#e8e8e8] rounded-sm">
       {/* تولبار بالای جدول */}
@@ -140,14 +227,25 @@ export function ProductsStep({
         <span className="text-[#d9d9d9]">|</span>
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 text-sm text-[rgba(0,0,0,0.65)] hover:text-[#0088ff] px-2 py-1 rounded transition-colors"
+          onClick={() => fileInputRef.current?.click()}
+          className="inline-flex items-center gap-1.5 text-sm text-[rgba(0,0,0,0.65)] hover:text-[#0088ff] px-2 py-1 rounded transition-colors min-h-[44px]"
         >
           <Upload className="size-4" />
           ورود (Import)
         </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json,.json"
+          onChange={handleImportFile}
+          className="hidden"
+          aria-hidden="true"
+          tabIndex={-1}
+        />
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 text-sm text-[rgba(0,0,0,0.65)] hover:text-[#0088ff] px-2 py-1 rounded transition-colors"
+          onClick={handleExport}
+          className="inline-flex items-center gap-1.5 text-sm text-[rgba(0,0,0,0.65)] hover:text-[#0088ff] px-2 py-1 rounded transition-colors min-h-[44px]"
         >
           <Download className="size-4" />
           خروجی (Export)
@@ -304,12 +402,13 @@ export function ProductsStep({
                     type="button"
                     onClick={() => updateProduct(p.id, "stackable", !p.stackable)}
                     className={cn(
-                      "size-8 rounded-sm border flex items-center justify-center transition-colors",
+                      "touch-target inline-flex items-center justify-center rounded-sm border transition-colors",
                       p.stackable
                         ? "bg-[#52c41a]/10 border-[#52c41a] text-[#52c41a]"
                         : "bg-white border-[#d9d9d9] text-[rgba(0,0,0,0.45)]"
                     )}
                     title={p.stackable ? "قابل چیدن روی هم" : "غیرقابل چیدن"}
+                    aria-label={p.stackable ? "قابل چیدن روی هم" : "غیرقابل چیدن"}
                   >
                     <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.5">
                       <rect x="2" y="9" width="12" height="4" rx="0.5" />
@@ -322,16 +421,18 @@ export function ProductsStep({
                     <button
                       type="button"
                       onClick={() => duplicateProduct(p.id)}
-                      className="text-[rgba(0,0,0,0.45)] hover:text-[#0088ff] p-1 rounded transition-colors"
+                      className="touch-target inline-flex items-center justify-center text-[rgba(0,0,0,0.45)] hover:text-[#0088ff] p-1 rounded transition-colors"
                       title="کپی"
+                      aria-label="کپی محصول"
                     >
                       <Copy className="size-3.5" />
                     </button>
                     <button
                       type="button"
                       onClick={() => removeProduct(p.id)}
-                      className="text-[rgba(0,0,0,0.45)] hover:text-[#ff4d4f] p-1 rounded transition-colors"
+                      className="touch-target inline-flex items-center justify-center text-[rgba(0,0,0,0.45)] hover:text-[#ff4d4f] p-1 rounded transition-colors"
                       title="حذف"
+                      aria-label="حذف محصول"
                     >
                       <Trash2 className="size-3.5" />
                     </button>
@@ -345,7 +446,7 @@ export function ProductsStep({
               <button
                 type="button"
                 onClick={() => addProduct(group.id)}
-                className="inline-flex items-center gap-1.5 text-xs text-[#0088ff] hover:text-[#40a9ff] px-2 py-1 rounded transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs text-[#0088ff] hover:text-[#40a9ff] px-3 py-2.5 rounded transition-colors active:bg-[#e6f7ff] min-h-[44px]"
               >
                 <Plus className="size-3.5" />
                 افزودن محصول

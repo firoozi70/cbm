@@ -239,6 +239,20 @@ function CameraRig({
   );
 }
 
+/* --------------------- بررسی پشتیبانی WebGL --------------------- */
+
+function detectWebGL(): boolean {
+  try {
+    const canvas = document.createElement("canvas");
+    return !!(
+      window.WebGLRenderingContext &&
+      (canvas.getContext("webgl2") || canvas.getContext("webgl") || canvas.getContext("experimental-webgl"))
+    );
+  } catch {
+    return false;
+  }
+}
+
 /* --------------------- کامپوننت اصلی صحنه --------------------- */
 
 export interface Scene3DProps {
@@ -251,6 +265,8 @@ export default function Scene3D({ boxes, container }: Scene3DProps) {
   const [playKey, setPlayKey] = useState(0);
   const [autoRotate, setAutoRotate] = useState(false);
   const [animDone, setAnimDone] = useState(false);
+  // Scene3D فقط سمت کلاینت بارگذاری می‌شود (dynamic/ssr:false)؛ محاسبه WebGL در اولین رندر امن است
+  const [webglOk] = useState(detectWebGL);
 
   const cL = container.internalLength;
   const maxDim = Math.max(cL, container.internalWidth, container.internalHeight);
@@ -305,15 +321,25 @@ export default function Scene3D({ boxes, container }: Scene3DProps) {
         </span>
       </div>
 
-      <Canvas
-        dpr={[1, 2]}
-        shadows
-        camera={{ position: [maxDim * 1.2, maxDim * 0.7, maxDim * 1.2], fov: 38, near: 1, far: maxDim * 12 }}
-        gl={{ antialias: true, alpha: true }}
-        performance={{ min: 0.4 }}
-        style={{ touchAction: "none" }}
-        className="!h-[320px] w-full sm:!h-[430px]"
-      >
+      {!webglOk ? (
+        /* پیام جایگزین برای WebViewهای قدیمی بدون WebGL */
+        <div className="flex h-[320px] w-full flex-col items-center justify-center gap-2 bg-[#f4faff] px-6 text-center sm:h-[430px]">
+          <BoxIcon className="size-10 text-[rgba(0,0,0,0.35)]" />
+          <p className="text-sm font-medium text-[#15354e]">نمایش سه‌بعدی در این دستگاه پشتیبانی نمی‌شود</p>
+          <p className="text-xs text-[rgba(0,0,0,0.55)] leading-relaxed max-w-xs">
+            برای مشاهده نمای سه‌بعدی، مرورگر یا وب‌ویو دستگاه خود را به‌روزرسانی کنید. سایر بخش‌های محاسبه بدون مشکل کار می‌کنند.
+          </p>
+        </div>
+      ) : (
+        <Canvas
+          dpr={[1, 2]}
+          shadows
+          camera={{ position: [maxDim * 1.2, maxDim * 0.7, maxDim * 1.2], fov: 38, near: 1, far: maxDim * 12 }}
+          gl={{ antialias: true, alpha: true }}
+          performance={{ min: 0.4 }}
+          style={{ touchAction: "none" }}
+          className="!h-[320px] w-full sm:!h-[430px]"
+        >
         <color attach="background" args={["#f4faff"]} />
         <fog attach="fog" args={["#f4faff", maxDim * 3, maxDim * 6]} />
         <ambientLight intensity={0.75} />
@@ -349,6 +375,7 @@ export default function Scene3D({ boxes, container }: Scene3DProps) {
 
         <CameraRig container={container} resetKey={resetKey} autoRotate={autoRotate} />
       </Canvas>
+      )}
 
       {/* راهنمای رنگ‌ها */}
       {boxes.length > 0 && (

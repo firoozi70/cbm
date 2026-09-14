@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { WizardStepper, type StepId } from "@/components/load-calculator/wizard-stepper";
 import { ProductsStep, type ProductRow, type Group } from "@/components/load-calculator/products-step";
 import { ContainersStep, getSelectedContainer } from "@/components/load-calculator/containers-step";
@@ -16,7 +16,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 
 const STEPS = [
   {
@@ -42,11 +41,18 @@ const STEPS = [
   },
 ];
 
+type ToolMode = "load" | "cbm";
+
+interface HistoryState {
+  toolMode: ToolMode;
+  step: StepId;
+}
+
 // محتوای پایین صفحه - مطابق SeaRates
 const BENEFITS = [
   {
     title: "سود-مقرون‌به‌صرفه بودن",
-    desc: "ماشین‌حساب بار SeaRates برای این طراحی شده که به شما نشان دهد چگونه بارهای کانتینری را محاسبه کنید تا بودجه حمل‌ونقل خود را در عمل بهینه‌سازی نمایید. در مصرف سوخت، عملیات بارگیری و تخلیه کانتینر، بسته‌بندی بار و کل زنجیره تأمین صرفه‌جویی کنید. اگر کسب‌وکار شما در تلاش است تا تجارت خود را توسعه دهد نه هزینه‌ها، اکنون یاد بگیرید چگونه بار را در کشتی یا کامیون محاسبه کنید.",
+    desc: "ماشین‌حساب بار برای این طراحی شده که به شما نشان دهد چگونه بارهای کانتینری را محاسبه کنید تا بودجه حمل‌ونقل خود را در عمل بهینه‌سازی نمایید. در مصرف سوخت، عملیات بارگیری و تخلیه کانتینر، بسته‌بندی بار و کل زنجیره تأمین صرفه‌جویی کنید. اگر کسب‌وکار شما در تلاش است تا تجارت خود را توسعه دهد نه هزینه‌ها، اکنون یاد بگیرید چگونه بار را در کشتی یا کامیون محاسبه کنید.",
   },
   {
     title: "بهینه‌سازی فضا و چیدمان",
@@ -54,13 +60,13 @@ const BENEFITS = [
   },
   {
     title: "بصری‌سازی پیشرفته",
-    desc: "ماشین‌حساب آنلاین SeaRates یک طرح ۳بعدی تعاملی با بصری‌سازی دقیق ارائه می‌دهد که مستقیماً متناسب با نیازهای شما تنظیم شده است. محاسبه‌گر چیدمان ۳بعدی اطمینان حاصل می‌کند که فرایند بارگیری و تخلیه کامیون یا کانتینر شما به‌خوبی پیش می‌رود. از روش‌های بارگیری ناکارآمد که هنگام تخلیه مشکل ایجاد می‌کنند پرهیز کنید. رویکرد فردی و کارآمد را با ویژگی‌های محاسبه‌گر بار ۳بعدی به‌کار ببرید.",
+    desc: "ماشین‌حساب آنلاین یک طرح ۳بعدی تعاملی با بصری‌سازی دقیق ارائه می‌دهد که مستقیماً متناسب با نیازهای شما تنظیم شده است. محاسبه‌گر چیدمان ۳بعدی اطمینان حاصل می‌کند که فرایند بارگیری و تخلیه کامیون یا کانتینر شما به‌خوبی پیش می‌رود. از روش‌های بارگیری ناکارآمد که هنگام تخلیه مشکل ایجاد می‌کنند پرهیز کنید. رویکرد فردی و کارآمد را با ویژگی‌های محاسبه‌گر بار ۳بعدی به‌کار ببرید.",
   },
 ];
 
 export default function Home() {
   // حالت ابزار: چیدمان بار یا ماشین‌حساب CBM
-  const [toolMode, setToolMode] = useState<"load" | "cbm">("load");
+  const [toolMode, setToolMode] = useState<ToolMode>("load");
   const [currentStep, setCurrentStep] = useState<StepId>("products");
   const [maxReachedStep, setMaxReachedStep] = useState(0);
   const [groups, setGroups] = useState<Group[]>([
@@ -115,6 +121,43 @@ export default function Home() {
   const [showInfo, setShowInfo] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  /* ---------- پشتیبانی دکمه Back در WebView (دیوار/مایکت/مرورگر موبایل) ---------- */
+  const skipPush = useRef(false);
+
+  useEffect(() => {
+    // وضعیت اولیه بدون افزودن به استک
+    window.history.replaceState({ toolMode: "load", step: "products" } satisfies HistoryState, "");
+
+    const onPopState = (e: PopStateEvent) => {
+      const s = e.state as HistoryState | null;
+      skipPush.current = true; // تغییر ناشی از Back است؛ دوباره push نکن
+      if (s) {
+        setToolMode(s.toolMode);
+        if (s.toolMode === "load") setCurrentStep(s.step);
+      } else {
+        // بازگشت به ابتدای استک
+        setToolMode("load");
+        setCurrentStep("products");
+      }
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  // هر تغییر وضعیت ابزار/مرحله به history اضافه می‌شود تا دکمه Back طبیعی کار کند
+  useEffect(() => {
+    if (skipPush.current) {
+      skipPush.current = false;
+      return;
+    }
+    const s = window.history.state as HistoryState | null;
+    if (s && s.toolMode === toolMode && (toolMode === "cbm" || s.step === currentStep)) {
+      return; // تغییری نیازی به ورودی جدید نیست
+    }
+    window.history.pushState({ toolMode, step: currentStep } satisfies HistoryState, "");
+  }, [toolMode, currentStep]);
+
   const goToStep = (step: StepId) => {
     const idx = STEPS.findIndex((s) => s.id === step);
     if (idx <= maxReachedStep) {
@@ -166,8 +209,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f5f5f5]">
-      {/* هدر - الهام گرفته از SeaRates */}
-      <header className="sticky top-0 z-30 bg-white border-b border-[#e8e8e8]">
+      {/* هدر - بهینه برای موبایل با safe-area */}
+      <header className="sticky top-0 z-30 bg-white border-b border-[#e8e8e8] safe-top">
         <div className="max-w-[1200px] mx-auto px-3 sm:px-6">
           <div className="flex items-center justify-between h-14">
             {/* لوگو */}
@@ -176,7 +219,7 @@ export default function Home() {
                 <Ship className="size-5 text-white" />
               </div>
               <div className="flex flex-col leading-tight">
-                <span className="text-sm font-bold text-[#15354e]">SeaRates</span>
+                <span className="text-sm font-bold text-[#15354e]">LoadCalc</span>
                 <span className="text-[10px] text-[rgba(0,0,0,0.45)] uppercase tracking-wide">فارسی</span>
               </div>
             </div>
@@ -187,18 +230,23 @@ export default function Home() {
                 ابزارها
                 <ChevronDown className="size-3.5" />
               </button>
-              <button className="text-[rgba(0,0,0,0.65)] hover:text-[#0088ff] transition-colors">خدمات</button>
-              <button className="text-[rgba(0,0,0,0.65)] hover:text-[#0088ff] transition-colors">مرجع</button>
-              <button className="text-[rgba(0,0,0,0.65)] hover:text-[#0088ff] transition-colors">شرکت</button>
-              <button className="text-[rgba(0,0,0,0.65)] hover:text-[#0088ff] transition-colors">یکپارچه‌سازی</button>
-              <button className="text-[#0088ff] hover:text-[#40a9ff] font-medium transition-colors">ورود</button>
+              <button className="text-[rgba(0,0,0,0.65)] hover:text-[#0088ff] transition-colors">راهنما</button>
+              <button
+                type="button"
+                onClick={() => setShowInfo(true)}
+                className="text-[#0088ff] font-medium transition-colors"
+              >
+                درباره
+              </button>
             </nav>
 
             {/* دکمه موبایل */}
             <button
               type="button"
-              className="md:hidden text-[rgba(0,0,0,0.65)] hover:text-[#0088ff] p-2"
+              className="md:hidden inline-flex items-center justify-center size-10 text-[rgba(0,0,0,0.65)] hover:text-[#0088ff] rounded-md active:bg-black/5 transition-colors"
               onClick={() => setMenuOpen(!menuOpen)}
+              aria-label={menuOpen ? "بستن منو" : "باز کردن منو"}
+              aria-expanded={menuOpen}
             >
               {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
             </button>
@@ -206,12 +254,39 @@ export default function Home() {
 
           {/* منوی موبایل */}
           {menuOpen && (
-            <nav className="md:hidden flex flex-col gap-2 py-3 border-t border-[#f0f0f0]">
-              <button className="text-right text-sm text-[rgba(0,0,0,0.65)] py-1">ابزارها</button>
-              <button className="text-right text-sm text-[rgba(0,0,0,0.65)] py-1">خدمات</button>
-              <button className="text-right text-sm text-[rgba(0,0,0,0.65)] py-1">مرجع</button>
-              <button className="text-right text-sm text-[rgba(0,0,0,0.65)] py-1">شرکت</button>
-              <button className="text-right text-sm text-[#0088ff] font-medium py-1">ورود</button>
+            <nav className="md:hidden flex flex-col gap-1 py-2 border-t border-[#f0f0f0]">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowInfo(true);
+                  setMenuOpen(false);
+                }}
+                className="text-right text-sm text-[rgba(0,0,0,0.75)] py-3 px-2 rounded-md active:bg-black/5 transition-colors min-h-[44px]"
+              >
+                راهنمای استفاده
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setToolMode("cbm");
+                  setMenuOpen(false);
+                  window.scrollTo({ top: 0 });
+                }}
+                className="text-right text-sm text-[rgba(0,0,0,0.75)] py-3 px-2 rounded-md active:bg-black/5 transition-colors min-h-[44px]"
+              >
+                ماشین‌حساب CBM
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setToolMode("load");
+                  setMenuOpen(false);
+                  window.scrollTo({ top: 0 });
+                }}
+                className="text-right text-sm text-[rgba(0,0,0,0.75)] py-3 px-2 rounded-md active:bg-black/5 transition-colors min-h-[44px]"
+              >
+                چیدمان بار در کانتینر
+              </button>
             </nav>
           )}
         </div>
@@ -219,17 +294,17 @@ export default function Home() {
 
       {/* عنوان صفحه */}
       <div className="bg-white border-b border-[#e8e8e8]">
-        <div className="max-w-[1200px] mx-auto px-3 sm:px-6 py-6 sm:py-8">
-          <h1 className="text-2xl sm:text-3xl font-semibold text-[#15354e]">
+        <div className="max-w-[1200px] mx-auto px-3 sm:px-6 py-4 sm:py-8">
+          <h1 className="text-xl sm:text-3xl font-semibold text-[#15354e]">
             محاسبه بار و چیدمان
           </h1>
-          <p className="text-sm text-[rgba(0,0,0,0.65)] mt-2 max-w-3xl leading-relaxed">
+          <p className="text-[13px] sm:text-sm text-[rgba(0,0,0,0.65)] mt-1.5 sm:mt-2 max-w-3xl leading-relaxed">
             ابزار هوشمند برای محاسبه بهینه چیدمان بار در کانتینر، کامیون و سایر وسایل نقلیه حمل.
             بار خود را وارد کنید، نوع وسیله نقلیه را انتخاب کنید و چیدمان ۳بعدی بهینه را مشاهده کنید.
           </p>
 
-          {/* انتخاب ابزار: چیدمان بار / ماشین‌حساب CBM */}
-          <div className="mt-5 inline-flex flex-wrap rounded-md border border-[#d9d9d9] overflow-hidden w-full sm:w-auto">
+          {/* انتخاب ابزار: دسکتاپ (در موبایل نوار پایین جایگزین است) */}
+          <div className="mt-4 sm:mt-5 hidden sm:inline-flex flex-wrap rounded-md border border-[#d9d9d9] overflow-hidden w-full sm:w-auto">
             <button
               type="button"
               onClick={() => setToolMode("load")}
@@ -261,7 +336,7 @@ export default function Home() {
       </div>
 
       {/* محتوای ابزار */}
-      <main className="flex-1 max-w-[1200px] mx-auto w-full px-3 sm:px-6 py-4 sm:py-6">
+      <main className="flex-1 max-w-[1200px] mx-auto w-full px-2.5 sm:px-6 py-3 sm:py-6">
         {toolMode === "cbm" ? (
           <div className="animate-fade-in-up">
             <CbmCalculator />
@@ -321,11 +396,11 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
             <div>
               <h2 className="text-lg sm:text-xl font-semibold text-[#15354e] mb-3">
-                ماشین‌حساب بار کانتینر SeaRates چیست؟
+                ماشین‌حساب بار کانتینر چیست؟
               </h2>
               <p className="text-sm text-[rgba(0,0,0,0.65)] leading-relaxed">
                 ماشین‌حساب برنامه بارگیری کانتینر، به دلیل نیاز و ویژگی‌های اختصاصی، چیدمان بار شما را در چند مرحله بهینه‌سازی می‌کند.
-                فرمول و روش‌شناسی منحصربه‌فرد SeaRates یک سیستم بارگیری کانتینر را در اختیار شما قرار می‌دهد که با آن می‌توانید کل عملیات بارگیری و تخلیه را با هر نوع باری شامل کارتن، کیسه بزرگ، بشکه، فله و... پیش‌بینی کنید.
+                روش محاسباتی منحصربه‌فرد این ابزار یک سیستم بارگیری کانتینر را در اختیار شما قرار می‌دهد که با آن می‌توانید کل عملیات بارگیری و تخلیه را با هر نوع باری شامل کارتن، کیسه بزرگ، بشکه، فله و... پیش‌بینی کنید.
               </p>
             </div>
             <div>
@@ -335,7 +410,7 @@ export default function Home() {
               <p className="text-sm text-[rgba(0,0,0,0.65)] leading-relaxed">
                 به دنبال محاسبه‌گر ابعاد بار برای نیازهای عمومی هستید؟ به‌راحتی در ۳ مرحله از طریق ماشین‌حساب بارگیری کانتینر ۲۰ یا ۴۰ فوتی عبور کنید.
                 تعجب می‌کنید چگونه یک محاسبه بار برای حمل با الزامات سفارشی انجام دهید؟
-                عملکرد گسترده ابزار محاسبه SeaRates را برای تنظیم فضا و محاسبه چیدمان کانتینر کاوش کنید.
+                عملکرد گسترده ابزار محاسبه را برای تنظیم فضا و محاسبه چیدمان کانتینر کاوش کنید.
               </p>
             </div>
           </div>
@@ -364,20 +439,6 @@ export default function Home() {
               </div>
             ))}
           </div>
-
-          {/* بخش نهایی */}
-          <div className="rounded-md bg-gradient-to-l from-[#e6f7ff] to-[#fafafa] p-6 text-center">
-            <h2 className="text-lg font-semibold text-[#15354e] mb-2">
-              ماشین‌حساب بار کانتینر اختصاصی خود را داشته باشید
-            </h2>
-            <p className="text-xs text-[rgba(0,0,0,0.65)] leading-relaxed max-w-2xl mx-auto mb-4">
-              نحوه محاسبه فضای بار خود را مستقیماً روی وب‌سایت شرکتتان نشان دهید!
-              به مشتریان وفادار و مخاطبان گسترده، نرم‌افزار بارگیری کانتینر برای طیف گسترده‌ای از کانتینرها، کامیون‌ها، بسته‌ها و ویژگی‌های بار ارائه دهید.
-            </p>
-            <button className="sr-btn-primary text-sm">
-              درخواست قیمت IT
-            </button>
-          </div>
         </div>
       </section>
 
@@ -385,41 +446,92 @@ export default function Home() {
       <footer className="bg-[#15354e] text-white">
         <div className="max-w-[1200px] mx-auto px-3 sm:px-6 py-6 text-center text-xs sm:text-sm">
           <p className="mb-1">
-            این ابزار بر اساس{" "}
-            <a
-              href="https://www.searates.com/load-calculator/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#40a9ff] hover:underline"
-            >
-              SeaRates Load Calculator
-            </a>{" "}
-            برای زبان فارسی و راست‌چین شبیه‌سازی شده است.
+            ماشین‌حساب بار و CBM فارسی — محاسبه حجم، وزن حجمی و چیدمان سه‌بعدی کانتینر و کامیون.
           </p>
           <p className="text-white/60 text-[10px] sm:text-xs">
             تمامی محاسبات به صورت محلی در مرورگر شما انجام می‌شود. این ابزار جایگزین مشاوره تخصصی بارگیری نیست.
           </p>
         </div>
+        {/* فاصله برای نوار ناوبری موبایل */}
+        <div aria-hidden className="h-[64px] md:hidden safe-bottom" />
       </footer>
+
+      {/* نوار ناوبری پایین - مخصوص موبایل (اپ‌مانند) */}
+      <nav
+        aria-label="ناوبری اصلی"
+        className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-white border-t border-[#e8e8e8] safe-bottom shadow-[0_-2px_10px_rgba(0,0,0,0.04)]"
+      >
+        <div className="grid grid-cols-2 h-16 max-w-[560px] mx-auto">
+          <button
+            type="button"
+            onClick={() => setToolMode("load")}
+            className={cn(
+              "relative flex flex-col items-center justify-center gap-1 transition-colors active:bg-black/5",
+              toolMode === "load" ? "text-[#0088ff]" : "text-[rgba(0,0,0,0.45)]"
+            )}
+            aria-current={toolMode === "load" ? "page" : undefined}
+          >
+            <ContainerIcon className="size-[22px]" />
+            <span className={cn("text-[10px]", toolMode === "load" && "font-semibold")}>
+              چیدمان بار
+            </span>
+            <span
+              className={cn(
+                "absolute top-0 h-0.5 w-10 rounded-full transition-opacity",
+                toolMode === "load" ? "bg-[#0088ff] opacity-100" : "opacity-0"
+              )}
+            />
+          </button>
+          <button
+            type="button"
+            onClick={() => setToolMode("cbm")}
+            className={cn(
+              "relative flex flex-col items-center justify-center gap-1 transition-colors active:bg-black/5",
+              toolMode === "cbm" ? "text-[#0088ff]" : "text-[rgba(0,0,0,0.45)]"
+            )}
+            aria-current={toolMode === "cbm" ? "page" : undefined}
+          >
+            <Boxes className="size-[22px]" />
+            <span className={cn("text-[10px]", toolMode === "cbm" && "font-semibold")}>
+              ماشین‌حساب CBM
+            </span>
+            <span
+              className={cn(
+                "absolute top-0 h-0.5 w-10 rounded-full transition-opacity",
+                toolMode === "cbm" ? "bg-[#0088ff] opacity-100" : "opacity-0"
+              )}
+            />
+          </button>
+        </div>
+      </nav>
 
       {/* مودال راهنما */}
       <Dialog open={showInfo} onOpenChange={setShowInfo}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>راهنمای استفاده</DialogTitle>
-            <DialogDescription>
-              این ابزار به شما کمک می‌کند بهترین استفاده را از فضای کانتینر داشته باشید.
+            <DialogDescription className="text-right leading-relaxed">
+              این ابزار به شما کمک می‌کند بهترین استفاده را از فضای کانتینر داشته باشید:
+              <br />
+              <br />
+              • <b>چیدمان بار:</b> محصولات و ابعادشان را وارد کنید، کانتینر یا کامیون را انتخاب کنید و چیدمان
+              سه‌بعدی بهینه را ببینید.
+              <br />
+              • <b>ماشین‌حساب CBM:</b> حجم هر بسته (پالت، کارتن، استوانه، رول، پاکت و...)، وزن حجمی و وزن قابل
+              احتساب هر شیوه حمل (دریایی، هوایی، زمینی، ریلی) را محاسبه کنید.
+              <br />• همه محاسبات روی گوشی شما و به‌صورت آفلاین انجام می‌شود.
             </DialogDescription>
           </DialogHeader>
         </DialogContent>
       </Dialog>
 
-      {/* دکمه راهنما شناور */}
+      {/* دکمه راهنما شناور - بالای نوار ناوبری در موبایل */}
       <button
         type="button"
         onClick={() => setShowInfo(true)}
-        className="fixed bottom-4 left-4 size-11 rounded-full bg-[#0088ff] text-white shadow-lg flex items-center justify-center hover:bg-[#40a9ff] transition-colors z-20"
+        className="fixed left-3 sm:left-4 bottom-[calc(72px+env(safe-area-inset-bottom,0px))] sm:bottom-4 size-11 rounded-full bg-[#0088ff] text-white shadow-lg flex items-center justify-center hover:bg-[#40a9ff] active:bg-[#007ae6] transition-colors z-30"
         title="راهنما"
+        aria-label="راهنمای استفاده"
       >
         <Info className="size-5" />
       </button>

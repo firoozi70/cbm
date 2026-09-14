@@ -132,9 +132,49 @@
     color: var(--sr-heading);
     font-weight: 600;
   }
+
+  /* ---------- پایه اپ‌مانند موبایل (استاندارد WebView مایکت/دیوار) ---------- */
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    overscroll-behavior-y: contain; /* جلوگیری از scroll-chain و bounce لبه */
+  }
+  button, a, input, select, textarea, label {
+    touch-action: manipulation; /* حذف تأخیر ۳۰۰ms و زوم دابل‌تپ */
+  }
+  /* ورودی‌های خوانا در موبایل: 16px جلوگیری از زوم خودکار iOS + هدف لمسی ۴۴px */
+  @media (max-width: 640px) {
+    input:not([type="color"]):not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+      font-size: 16px !important;
+      min-height: 42px;
+    }
+    .sr-btn-primary,
+    .sr-btn-default {
+      min-height: 44px;
+    }
+    .touch-target {
+      min-width: 40px;
+      min-height: 40px;
+    }
+  }
 }
 
 @layer utilities {
+  /* فاصله امن پایین برای دستگاه‌های ناچ‌دار (iPhone X+) */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .pb-safe-tabbar {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
   .persian-numbers {
     font-feature-settings: "ss01" on;
   }

@@ -281,8 +281,9 @@ export function CbmCalculator() {
                     <button
                       type="button"
                       onClick={() => duplicateRow(row.id)}
-                      className="text-[rgba(0,0,0,0.45)] hover:text-[#0088ff] p-1.5 rounded transition-colors"
+                      className="touch-target inline-flex items-center justify-center text-[rgba(0,0,0,0.45)] hover:text-[#0088ff] p-1.5 rounded transition-colors"
                       title="کپی ردیف"
+                      aria-label="کپی ردیف"
                     >
                       <Copy className="size-4" />
                     </button>
@@ -290,8 +291,9 @@ export function CbmCalculator() {
                       type="button"
                       onClick={() => removeRow(row.id)}
                       disabled={rows.length <= 1}
-                      className="text-[rgba(0,0,0,0.45)] hover:text-[#ff4d4f] p-1.5 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="touch-target inline-flex items-center justify-center text-[rgba(0,0,0,0.45)] hover:text-[#ff4d4f] p-1.5 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                       title="حذف ردیف"
+                      aria-label="حذف ردیف"
                     >
                       <Trash2 className="size-4" />
                     </button>
@@ -423,7 +425,7 @@ export function CbmCalculator() {
           <button
             type="button"
             onClick={addRow}
-            className="inline-flex items-center gap-1.5 text-xs text-[#0088ff] hover:text-[#40a9ff] px-2 py-1.5 rounded transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-[#0088ff] hover:text-[#40a9ff] px-3 py-2.5 rounded transition-colors active:bg-[#e6f7ff] min-h-[44px]"
           >
             <Plus className="size-4" />
             افزودن قلم بار (پالت یا بسته)
