@@ -234,7 +234,8 @@ export function ProductsStep({
                   />
 
                   {/* Length */}
-                  <div className="relative">
+                  <div>
+                    <span className="block lg:hidden text-[9px] text-[rgba(0,0,0,0.45)] mb-0.5">طول (mm)</span>
                     <input
                       type="number"
                       value={p.length}
@@ -244,44 +245,59 @@ export function ProductsStep({
                   </div>
 
                   {/* Width */}
-                  <input
-                    type="number"
-                    value={p.width}
-                    onChange={(e) => updateProduct(p.id, "width", e.target.value)}
-                    className="h-8 px-2 text-xs border border-[#d9d9d9] rounded-sm hover:border-[#0088ff] focus:border-[#0088ff] focus:outline-none tabular-nums"
-                  />
+                  <div>
+                    <span className="block lg:hidden text-[9px] text-[rgba(0,0,0,0.45)] mb-0.5">عرض (mm)</span>
+                    <input
+                      type="number"
+                      value={p.width}
+                      onChange={(e) => updateProduct(p.id, "width", e.target.value)}
+                      className="w-full h-8 px-2 text-xs border border-[#d9d9d9] rounded-sm hover:border-[#0088ff] focus:border-[#0088ff] focus:outline-none tabular-nums"
+                    />
+                  </div>
 
                   {/* Height */}
-                  <input
-                    type="number"
-                    value={p.height}
-                    onChange={(e) => updateProduct(p.id, "height", e.target.value)}
-                    className="h-8 px-2 text-xs border border-[#d9d9d9] rounded-sm hover:border-[#0088ff] focus:border-[#0088ff] focus:outline-none tabular-nums"
-                  />
+                  <div>
+                    <span className="block lg:hidden text-[9px] text-[rgba(0,0,0,0.45)] mb-0.5">ارتفاع (mm)</span>
+                    <input
+                      type="number"
+                      value={p.height}
+                      onChange={(e) => updateProduct(p.id, "height", e.target.value)}
+                      className="w-full h-8 px-2 text-xs border border-[#d9d9d9] rounded-sm hover:border-[#0088ff] focus:border-[#0088ff] focus:outline-none tabular-nums"
+                    />
+                  </div>
 
                   {/* Weight */}
-                  <input
-                    type="number"
-                    value={p.weight}
-                    onChange={(e) => updateProduct(p.id, "weight", e.target.value)}
-                    className="h-8 px-2 text-xs border border-[#d9d9d9] rounded-sm hover:border-[#0088ff] focus:border-[#0088ff] focus:outline-none tabular-nums"
-                  />
+                  <div>
+                    <span className="block lg:hidden text-[9px] text-[rgba(0,0,0,0.45)] mb-0.5">وزن (kg)</span>
+                    <input
+                      type="number"
+                      value={p.weight}
+                      onChange={(e) => updateProduct(p.id, "weight", e.target.value)}
+                      className="w-full h-8 px-2 text-xs border border-[#d9d9d9] rounded-sm hover:border-[#0088ff] focus:border-[#0088ff] focus:outline-none tabular-nums"
+                    />
+                  </div>
 
                   {/* Quantity */}
-                  <input
-                    type="number"
-                    value={p.quantity}
-                    onChange={(e) => updateProduct(p.id, "quantity", e.target.value)}
-                    className="h-8 px-2 text-xs border border-[#d9d9d9] rounded-sm hover:border-[#0088ff] focus:border-[#0088ff] focus:outline-none tabular-nums"
-                  />
+                  <div>
+                    <span className="block lg:hidden text-[9px] text-[rgba(0,0,0,0.45)] mb-0.5">تعداد</span>
+                    <input
+                      type="number"
+                      value={p.quantity}
+                      onChange={(e) => updateProduct(p.id, "quantity", e.target.value)}
+                      className="w-full h-8 px-2 text-xs border border-[#d9d9d9] rounded-sm hover:border-[#0088ff] focus:border-[#0088ff] focus:outline-none tabular-nums"
+                    />
+                  </div>
 
                   {/* Color */}
-                  <input
-                    type="color"
-                    value={p.color}
-                    onChange={(e) => updateProduct(p.id, "color", e.target.value)}
-                    className="size-8 border border-[#d9d9d9] rounded-sm cursor-pointer p-0.5 bg-white"
-                  />
+                  <div>
+                    <span className="block lg:hidden text-[9px] text-[rgba(0,0,0,0.45)] mb-0.5">رنگ</span>
+                    <input
+                      type="color"
+                      value={p.color}
+                      onChange={(e) => updateProduct(p.id, "color", e.target.value)}
+                      className="size-8 border border-[#d9d9d9] rounded-sm cursor-pointer p-0.5 bg-white"
+                    />
+                  </div>
 
                   {/* Stack toggle */}
                   <button

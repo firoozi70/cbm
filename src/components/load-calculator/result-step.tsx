@@ -1,8 +1,9 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { ContainerSpec, faNumber } from "@/lib/containers";
-import { StuffingResult, ProductPlacement } from "@/lib/load-calculation";
 import { faNumber as faN } from "@/lib/containers";
+import { StuffingResult } from "@/lib/load-calculation";
 import { AlertTriangle, CheckCircle2, Download, Box, Layers3, Weight, TrendingUp } from "lucide-react";
 
 interface Props {
@@ -12,184 +13,18 @@ interface Props {
   onRestart: () => void;
 }
 
-// بصری‌سازی ایزومتریک 3D از کانتینر با کارتن‌های چیده‌شده
-function StuffingVisualization({ result, container }: { result: StuffingResult; container: ContainerSpec }) {
-  // ابعاد کانتینر به پیکسل
-  // طول کانتینر بزرگتر است، بنابراین آن را به ۴۵۰ پیکسل مقیاس می‌کنیم
-  const SCALE = 460 / Math.max(container.internalLength, 1);
-  const cl = container.internalLength * SCALE;
-  const cw = container.internalWidth * SCALE;
-  const ch = container.internalHeight * SCALE;
-
-  // تنظیمات ایزومتریک
-  const angle = Math.PI / 6;
-  const cos = Math.cos(angle);
-  const sin = Math.sin(angle);
-
-  // ابعاد نهایی SVG
-  const W = cl * cos + cw * cos + 80;
-  const H = ch + Math.max(cl, cw) * sin + 60;
-
-  // مبدأ (گوشه پایین-جلو)
-  const originX = 40 + cw * cos;
-  const originY = H - ch - 30;
-
-  // تبدیل 3D → 2D ایزومتریک
-  // x = طول کانتینر، y = عرض، z = ارتفاع
-  const project = (x: number, y: number, z: number) => {
-    const px = originX + x * cos - y * cos;
-    const py = originY - z + x * sin + y * sin;
-    return { px, py };
-  };
-
-  // رسم یک جعبه 3D با ۵ رویه
-  const drawBox = (
-    x: number,
-    y: number,
-    z: number,
-    w: number,
-    d: number,
-    h: number,
-    fill: string,
-    strokeColor = "#15354e",
-    opacity = 1
-  ) => {
-    const corners = [
-      project(x, y, z),
-      project(x + w, y, z),
-      project(x + w, y + d, z),
-      project(x, y + d, z),
-      project(x, y, z + h),
-      project(x + w, y, z + h),
-      project(x + w, y + d, z + h),
-      project(x, y + d, z + h),
-    ];
-
-    const faces = [
-      { pts: [0, 1, 5, 4], op: opacity * 1.0 }, // front
-      { pts: [1, 2, 6, 5], op: opacity * 0.78 }, // right
-      { pts: [3, 2, 6, 7], op: opacity * 0.6 }, // back
-      { pts: [0, 3, 7, 4], op: opacity * 0.85 }, // left
-      { pts: [4, 5, 6, 7], op: opacity * 1.15 }, // top
-    ];
-
-    return faces.map((f) => ({
-      d: `M ${corners[f.pts[0]].px},${corners[f.pts[0]].py} ` +
-        f.pts.slice(1).map((i) => `L ${corners[i].px},${corners[i].py}`).join(" ") +
-        " Z",
-      fill,
-      op: f.op,
-    }));
-  };
-
-  // قاب کانتینر
-  const containerFaces = drawBox(0, 0, 0, cl, cw, ch, "transparent", "#d9d9d9", 1);
-
-  // رسم کارتن‌های هر محصول - فقط تعداد محدود برای جلوگیری از کندی
-  const cartonElements: React.ReactNode[] = [];
-  const MAX_PER_PRODUCT = 60; // حداکثر ۶۰ جعبه برای هر محصول برای رسم
-  let cartonIndex = 0;
-
-  for (const placement of result.placements) {
-    if (placement.placed === 0) continue;
-
-    // ابعاد هر جعبه در پیکسل
-    const bw = placement.effLength * SCALE;
-    const bd = placement.effWidth * SCALE;
-    const bh = placement.effHeight * SCALE;
-
-    // تعداد واقعی برای رسم (محدودشده)
-    const drawCount = Math.min(placement.placed, MAX_PER_PRODUCT);
-    const perRow = placement.layoutL;
-    const rowsPerLayer = placement.layoutW;
-
-    for (let i = 0; i < drawCount; i++) {
-      const layer = Math.floor(i / (perRow * rowsPerLayer));
-      const inLayer = i % (perRow * rowsPerLayer);
-      const row = Math.floor(inLayer / perRow);
-      const col = inLayer % perRow;
-
-      const x = placement.startX * SCALE + col * bw;
-      const y = row * bd;
-      const z = layer * bh;
-
-      // اگر جعله بیرون از کانتینر بود، نکش
-      if (x + bw > cl + 1 || y + bd > cw + 1 || z + bh > ch + 1) continue;
-
-      const faces = drawBox(
-        x,
-        y,
-        z,
-        bw,
-        bd,
-        bh,
-        placement.color,
-        "rgba(21, 53, 78, 0.4)",
-        0.92
-      );
-
-      faces.forEach((f, fi) => {
-        cartonElements.push(
-          <path
-            key={`p-${placement.productId}-${i}-${fi}`}
-            d={f.d}
-            fill={f.fill}
-            stroke="rgba(21, 53, 78, 0.5)"
-            strokeWidth={0.4}
-            opacity={f.op}
-          />
-        );
-      });
-      cartonIndex++;
-    }
-  }
-
-  return (
-    <div className="w-full overflow-x-auto scrollbar-fa rounded-md bg-gradient-to-br from-[#e6f7ff] to-[#fafafa] p-3">
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className="w-full h-auto max-h-[460px]"
-        preserveAspectRatio="xMidYMid meet"
-      >
-        {/* سایه زیر */}
-        <ellipse
-          cx={W / 2}
-          cy={H - 8}
-          rx={W / 2.5}
-          ry={5}
-          fill="rgba(0, 0, 0, 0.08)"
-        />
-
-        {/* کانتینر - قاب نقطه‌چین */}
-        {containerFaces.map((f, i) => (
-          <path
-            key={`cont-${i}`}
-            d={f.d}
-            fill="rgba(255, 255, 255, 0.05)"
-            stroke="#d9d9d9"
-            strokeWidth={1.5}
-            strokeDasharray="4,3"
-          />
-        ))}
-
-        {/* کارتن‌ها */}
-        {cartonElements}
-
-        {/* برچسب ابعاد کانتینر */}
-        <text
-          x={W / 2}
-          y={H - 1}
-          textAnchor="middle"
-          fontSize="10"
-          fill="rgba(0, 0, 0, 0.45)"
-          fontFamily="inherit"
-        >
-          {faNumber(container.internalLength, 0)} × {faNumber(container.internalWidth, 0)} × {faNumber(container.internalHeight, 0)} سانتی‌متر
-        </text>
-      </svg>
+// صحنه سه‌بعدی تعاملی - فقط سمت کلاینت رندر می‌شود
+const Scene3D = dynamic(() => import("./scene-3d"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[320px] w-full items-center justify-center bg-[#f4faff] sm:h-[430px]">
+      <div className="flex flex-col items-center gap-2 text-[rgba(0,0,0,0.45)]">
+        <div className="size-8 animate-spin rounded-full border-2 border-[#0088ff] border-t-transparent" />
+        <span className="text-xs">در حال آماده‌سازی نمای سه‌بعدی…</span>
+      </div>
     </div>
-  );
-}
+  ),
+});
 
 export function ResultStep({ result, container, onBack, onRestart }: Props) {
   return (
@@ -267,38 +102,40 @@ export function ResultStep({ result, container, onBack, onRestart }: Props) {
         {/* وضعیت کلی */}
         {result.allFit ? (
           <div className="flex items-center gap-2 p-3 rounded-md bg-[#f6ffed] border border-[#b7eb8f] text-sm">
-            <CheckCircle2 className="size-5 text-[#52c41a]" />
+            <CheckCircle2 className="size-5 text-[#52c41a] shrink-0" />
             <span className="text-[#389e0d]">
               همه محصولات با موفقیت در کانتینر جا گرفتند. چیدمان بهینه است.
             </span>
           </div>
         ) : (
           <div className="flex items-center gap-2 p-3 rounded-md bg-[#fffbe6] border border-[#ffe58f] text-sm">
-            <AlertTriangle className="size-5 text-[#faad14]" />
+            <AlertTriangle className="size-5 text-[#faad14] shrink-0" />
             <span className="text-[#d48806]">
               همه محصولات در یک کانتینر جا نمی‌گیرند. برای باقی‌مانده، کانتینر دیگری نیاز دارید.
             </span>
           </div>
         )}
 
-        {/* بصری‌سازی */}
+        {/* بصری‌سازی سه‌بعدی تعاملی */}
         <div className="border border-[#e8e8e8] rounded-md overflow-hidden">
           <div className="px-3 py-2 bg-[#fafafa] border-b border-[#e8e8e8]">
             <h4 className="text-xs font-semibold text-[#15354e]">
-              نمای ایزومتریک چیدمان در کانتینر
+              نمای سه‌بعدی تعاملی چیدمان در کانتینر
             </h4>
           </div>
           {result.totalPlaced > 0 ? (
-            <StuffingVisualization result={result} container={container} />
+            <Scene3D boxes={result.boxes} container={container} />
           ) : (
             <div className="text-center py-12 text-[rgba(0,0,0,0.45)]">
               <AlertTriangle className="size-10 mx-auto mb-2" />
               هیچ محصولی در کانتینر نمی‌گنجد. ابعاد را بررسی کنید.
             </div>
           )}
-          <p className="text-[10px] text-[rgba(0,0,0,0.45)] text-center py-2 border-t border-[#f0f0f0]">
-            * این نمایش نمایی است و برای جلوگیری از کندی، حداکثر ۶۰ جعبه برای هر محصول رسم می‌شود.
-          </p>
+          {result.boxesSampled && (
+            <p className="text-[10px] text-[rgba(0,0,0,0.45)] text-center py-2 border-t border-[#f0f0f0]">
+              * به دلیل تعداد بالای جعبه‌ها، {faNumber(result.boxesShown)} جعبه از {faNumber(result.totalPlaced)} جعبه نمایش داده می‌شود.
+            </p>
+          )}
         </div>
 
         {/* جزئیات هر محصول */}
@@ -309,7 +146,7 @@ export function ResultStep({ result, container, onBack, onRestart }: Props) {
             </h4>
           </div>
           <div className="overflow-x-auto scrollbar-fa">
-            <table className="w-full text-xs">
+            <table className="w-full text-xs min-w-[560px]">
               <thead className="bg-[#fafafa] border-b border-[#e8e8e8]">
                 <tr>
                   <th className="text-right p-2 font-medium text-[rgba(0,0,0,0.65)]">رنگ</th>

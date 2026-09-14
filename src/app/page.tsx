@@ -5,8 +5,10 @@ import { WizardStepper, type StepId } from "@/components/load-calculator/wizard-
 import { ProductsStep, type ProductRow, type Group } from "@/components/load-calculator/products-step";
 import { ContainersStep, getSelectedContainer } from "@/components/load-calculator/containers-step";
 import { ResultStep } from "@/components/load-calculator/result-step";
+import { CbmCalculator } from "@/components/load-calculator/cbm-calculator";
 import { calculateMultiStuffing, type MultiProductInput } from "@/lib/load-calculation";
-import { Ship, ChevronDown, Menu, X, Info } from "lucide-react";
+import { Ship, ChevronDown, Menu, X, Info, Boxes, Container as ContainerIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -57,6 +59,8 @@ const BENEFITS = [
 ];
 
 export default function Home() {
+  // حالت ابزار: چیدمان بار یا ماشین‌حساب CBM
+  const [toolMode, setToolMode] = useState<"load" | "cbm">("load");
   const [currentStep, setCurrentStep] = useState<StepId>("products");
   const [maxReachedStep, setMaxReachedStep] = useState(0);
   const [groups, setGroups] = useState<Group[]>([
@@ -223,53 +227,90 @@ export default function Home() {
             ابزار هوشمند برای محاسبه بهینه چیدمان بار در کانتینر، کامیون و سایر وسایل نقلیه حمل.
             بار خود را وارد کنید، نوع وسیله نقلیه را انتخاب کنید و چیدمان ۳بعدی بهینه را مشاهده کنید.
           </p>
+
+          {/* انتخاب ابزار: چیدمان بار / ماشین‌حساب CBM */}
+          <div className="mt-5 inline-flex flex-wrap rounded-md border border-[#d9d9d9] overflow-hidden w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setToolMode("load")}
+              className={cn(
+                "flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm transition-colors",
+                toolMode === "load"
+                  ? "bg-[#0088ff] text-white font-medium"
+                  : "bg-white text-[rgba(0,0,0,0.65)] hover:text-[#0088ff]"
+              )}
+            >
+              <ContainerIcon className="size-4" />
+              چیدمان بار در کانتینر
+            </button>
+            <button
+              type="button"
+              onClick={() => setToolMode("cbm")}
+              className={cn(
+                "flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm transition-colors border-r border-[#d9d9d9]",
+                toolMode === "cbm"
+                  ? "bg-[#0088ff] text-white font-medium"
+                  : "bg-white text-[rgba(0,0,0,0.65)] hover:text-[#0088ff]"
+              )}
+            >
+              <Boxes className="size-4" />
+              ماشین‌حساب CBM
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* استپر wizard */}
-      <WizardStepper
-        steps={STEPS}
-        currentStep={currentStep}
-        onStepClick={goToStep}
-        maxReachedStep={maxReachedStep}
-      />
-
-      {/* محتوای wizard */}
+      {/* محتوای ابزار */}
       <main className="flex-1 max-w-[1200px] mx-auto w-full px-3 sm:px-6 py-4 sm:py-6">
-        {currentStep === "products" && (
+        {toolMode === "cbm" ? (
           <div className="animate-fade-in-up">
-            <ProductsStep
-              groups={groups}
-              products={products}
-              setGroups={setGroups}
-              setProducts={setProducts}
-              usePallets={usePallets}
-              setUsePallets={setUsePallets}
-              onNext={next}
-            />
+            <CbmCalculator />
           </div>
-        )}
+        ) : (
+          <>
+            <WizardStepper
+              steps={STEPS}
+              currentStep={currentStep}
+              onStepClick={goToStep}
+              maxReachedStep={maxReachedStep}
+            />
 
-        {currentStep === "containers" && (
-          <div className="animate-fade-in-up">
-            <ContainersStep
-              selectedId={selectedContainerId}
-              onSelect={setSelectedContainerId}
-              onNext={next}
-              onBack={back}
-            />
-          </div>
-        )}
+            {currentStep === "products" && (
+              <div className="animate-fade-in-up mt-4">
+                <ProductsStep
+                  groups={groups}
+                  products={products}
+                  setGroups={setGroups}
+                  setProducts={setProducts}
+                  usePallets={usePallets}
+                  setUsePallets={setUsePallets}
+                  onNext={next}
+                />
+              </div>
+            )}
 
-        {currentStep === "result" && stuffingResult && (
-          <div className="animate-fade-in-up">
-            <ResultStep
-              result={stuffingResult}
-              container={container}
-              onBack={back}
-              onRestart={restart}
-            />
-          </div>
+            {currentStep === "containers" && (
+              <div className="animate-fade-in-up">
+                <ContainersStep
+                  selectedId={selectedContainerId}
+                  onSelect={setSelectedContainerId}
+                  onNext={next}
+                  onBack={back}
+                />
+              </div>
+            )}
+
+            {currentStep === "result" && stuffingResult && (
+              <div className="animate-fade-in-up">
+                <ResultStep
+                  result={stuffingResult}
+                  container={container}
+                  onBack={back}
+                  onRestart={restart}
+                />
+              </div>
+            )}
+          </>
         )}
       </main>
 
