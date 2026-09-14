@@ -73,7 +73,7 @@ export function ContainersStep({ selectedId, onSelect, onNext, onBack }: Props) 
         <h3 className="text-sm font-semibold text-[#15354e]">
           انتخاب نوع کانتینر یا کامیون
         </h3>
-        <p className="text-xs text-[rgba(0,0,0,0.65)] mt-1">
+        <p className="hidden sm:block text-xs text-[rgba(0,0,0,0.65)] mt-1">
           نوع وسیله نقلیه را برای چیدمان انتخاب کنید. ابعاد داخلی برای محاسبه استفاده می‌شود.
         </p>
       </div>

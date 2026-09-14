@@ -292,13 +292,13 @@ export default function Home() {
         </div>
       </header>
 
-      {/* عنوان صفحه */}
+      {/* عنوان صفحه - در موبایل کامپکت اپ‌مانند */}
       <div className="bg-white border-b border-[#e8e8e8]">
-        <div className="max-w-[1200px] mx-auto px-3 sm:px-6 py-4 sm:py-8">
-          <h1 className="text-xl sm:text-3xl font-semibold text-[#15354e]">
+        <div className="max-w-[1200px] mx-auto px-3 sm:px-6 py-2.5 sm:py-8">
+          <h1 className="text-base sm:text-3xl font-semibold text-[#15354e]">
             محاسبه بار و چیدمان
           </h1>
-          <p className="text-[13px] sm:text-sm text-[rgba(0,0,0,0.65)] mt-1.5 sm:mt-2 max-w-3xl leading-relaxed">
+          <p className="hidden sm:block text-[13px] sm:text-sm text-[rgba(0,0,0,0.65)] mt-1.5 sm:mt-2 max-w-3xl leading-relaxed">
             ابزار هوشمند برای محاسبه بهینه چیدمان بار در کانتینر، کامیون و سایر وسایل نقلیه حمل.
             بار خود را وارد کنید، نوع وسیله نقلیه را انتخاب کنید و چیدمان ۳بعدی بهینه را مشاهده کنید.
           </p>
@@ -389,8 +389,8 @@ export default function Home() {
         )}
       </main>
 
-      {/* بخش محتوای پایین - شبیه SeaRates */}
-      <section className="bg-white border-t border-[#e8e8e8] mt-4">
+      {/* بخش محتوای پایین (سئو) - فقط دسکتاپ؛ در موبایل حذف برای حس اپ واقعی */}
+      <section className="hidden md:block bg-white border-t border-[#e8e8e8] mt-4">
         <div className="max-w-[1200px] mx-auto px-3 sm:px-6 py-8 sm:py-12">
           {/* سوالات متداول - شبیه اصلی */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
@@ -442,15 +442,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* فوتر */}
+      {/* فوتر - در موبایل یک خط کوتاه اپ‌مانند */}
       <footer className="bg-[#15354e] text-white">
-        <div className="max-w-[1200px] mx-auto px-3 sm:px-6 py-6 text-center text-xs sm:text-sm">
-          <p className="mb-1">
+        <div className="max-w-[1200px] mx-auto px-3 sm:px-6 py-3 sm:py-6 text-center text-xs sm:text-sm">
+          <p className="hidden sm:block mb-1">
             ماشین‌حساب بار و CBM فارسی — محاسبه حجم، وزن حجمی و چیدمان سه‌بعدی کانتینر و کامیون.
           </p>
-          <p className="text-white/60 text-[10px] sm:text-xs">
+          <p className="hidden sm:block text-white/60 text-[10px] sm:text-xs">
             تمامی محاسبات به صورت محلی در مرورگر شما انجام می‌شود. این ابزار جایگزین مشاوره تخصصی بارگیری نیست.
           </p>
+          <p className="sm:hidden text-[10px] text-white/60">LoadCalc — محاسبات به‌صورت محلی روی دستگاه شما</p>
         </div>
         {/* فاصله برای نوار ناوبری موبایل */}
         <div aria-hidden className="h-[64px] md:hidden safe-bottom" />

@@ -165,7 +165,7 @@ export function CbmCalculator() {
       <div className="bg-white border border-[#e8e8e8] rounded-sm">
         <div className="p-3 border-b border-[#e8e8e8] bg-[#fafafa]">
           <h3 className="text-sm font-semibold text-[#15354e]">شیوه حمل و نقل</h3>
-          <p className="text-xs text-[rgba(0,0,0,0.65)] mt-1">
+          <p className="hidden sm:block text-xs text-[rgba(0,0,0,0.65)] mt-1">
             وزن حجمی بر اساس ضریب استاندارد هر شیوه حمل محاسبه می‌شود.
           </p>
         </div>
@@ -215,7 +215,7 @@ export function CbmCalculator() {
         <div className="flex items-center justify-between p-3 border-b border-[#e8e8e8] bg-[#fafafa]">
           <div>
             <h3 className="text-sm font-semibold text-[#15354e]">اقلام بار</h3>
-            <p className="text-xs text-[rgba(0,0,0,0.65)] mt-1">
+            <p className="hidden sm:block text-xs text-[rgba(0,0,0,0.65)] mt-1">
               نوع بسته، ابعاد، وزن و تعداد را وارد کنید. حجم هر بسته (CBM) خودکار محاسبه می‌شود.
             </p>
           </div>
@@ -549,7 +549,7 @@ export function CbmCalculator() {
                 </tbody>
               </table>
             </div>
-            <p className="text-[10px] text-[rgba(0,0,0,0.45)] mt-2 leading-relaxed">
+            <p className="hidden sm:block text-[10px] text-[rgba(0,0,0,0.45)] mt-2 leading-relaxed">
               {selectedMode.hint}. وزن قابل احتساب مبنای محاسبه کرایه حمل است؛ هرگاه وزن حجمی از وزن واقعی بیشتر
               شود، کرایه بر اساس وزن حجمی محاسبه می‌شود (W/M).
             </p>
