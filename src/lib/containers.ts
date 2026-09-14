@@ -115,6 +115,18 @@ export const CONTAINERS: ContainerSpec[] = [
   },
 ];
 
+// انواع محصول - الهام گرفته از دسته‌بندی‌های SeaRates
+export const PRODUCT_TYPES = [
+  { en: "Boxes", fa: "جعبه" },
+  { en: "Sacks", fa: "کیسه" },
+  { en: "Big bags", fa: "کیسه بزرگ" },
+  { en: "Barrels", fa: "بشکه" },
+  { en: "Pallets", fa: "پالت" },
+  { en: "Drums", fa: "مخزن" },
+  { en: "Crates", fa: "صندوق چوبی" },
+  { en: "Bundles", fa: "بسته" },
+];
+
 // واحد‌های اندازه‌گیری
 export type LengthUnit = "cm" | "m" | "in" | "ft";
 export type WeightUnit = "kg" | "g" | "lb" | "t";

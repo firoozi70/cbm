@@ -1,28 +1,38 @@
 import type { Metadata, Viewport } from "next";
-import { Vazirmatn } from "next/font/google";
+import { Montserrat } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+
+const montserrat = Montserrat({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-montserrat",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
+// Vazirmatn از Google Fonts برای فارسی
+import { Vazirmatn } from "next/font/google";
 
 const vazirmatn = Vazirmatn({
   subsets: ["arabic", "latin"],
   variable: "--font-vazirmatn",
   display: "swap",
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "ماشین‌حساب بار - SeaRates فارسی",
+  title: "ماشین‌حساب بار و چیدمان | SeaRates فارسی",
   description:
-    "ابزار محاسبه و چیدمان بار در کانتینر با پشتیبانی کامل از زبان فارسی و راست‌چین. محاسبه تعداد کارتن، درصد استفاده از حجم و وزن مجاز کانتینر.",
+    "ابزار هوشمند محاسبه و چیدمان بهینه بار در کانتینر و کامیون. نسخه فارسی و راست‌چین ابزار SeaRates Load Calculator.",
   keywords: [
     "محاسبه بار",
-    "کانتینر",
+    "چیدمان کانتینر",
     "load calculator",
     "SeaRates",
     "حمل و نقل",
-    "چیدمان بار",
     "بار اندازی",
   ],
-  authors: [{ name: "SeaRates Persian" }],
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -34,16 +44,16 @@ export const metadata: Metadata = {
     apple: "/icon.svg",
   },
   openGraph: {
-    title: "ماشین‌حساب بار - SeaRates فارسی",
+    title: "ماشین‌حساب بار و چیدمان - SeaRates فارسی",
     description:
-      "ابزار فارسی و راست‌چین برای محاسبه و چیدمان بار در کانتینر.",
+      "ابزار فارسی و راست‌چین برای محاسبه و چیدمان بهینه بار در کانتینر.",
     type: "website",
     locale: "fa_IR",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0f766e",
+  themeColor: "#0088ff",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
@@ -58,7 +68,7 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl" suppressHydrationWarning>
       <body
-        className={`${vazirmatn.variable} font-sans antialiased bg-background text-foreground`}
+        className={`${montserrat.variable} ${vazirmatn.variable} font-sans antialiased bg-white text-foreground`}
       >
         {children}
         <Toaster />

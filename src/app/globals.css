@@ -37,81 +37,81 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 5px;
+  --radius-xl: 8px;
 }
 
 :root {
-  --radius: 0.625rem;
-  /* پالت آبی-سبز دریایی - الهام گرفته از SeaRates */
-  --background: oklch(0.985 0.005 220);
-  --foreground: oklch(0.18 0.02 230);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.02 230);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.02 230);
-  /* رنگ اصلی - سبز-آبی تیره */
-  --primary: oklch(0.45 0.11 200);
-  --primary-foreground: oklch(0.99 0.005 220);
-  --secondary: oklch(0.93 0.02 210);
-  --secondary-foreground: oklch(0.25 0.04 210);
-  --muted: oklch(0.95 0.01 220);
-  --muted-foreground: oklch(0.5 0.02 220);
-  --accent: oklch(0.88 0.04 190);
-  --accent-foreground: oklch(0.25 0.06 200);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.9 0.015 220);
-  --input: oklch(0.92 0.01 220);
-  --ring: oklch(0.45 0.11 200);
-  --chart-1: oklch(0.45 0.11 200);
-  --chart-2: oklch(0.6 0.13 180);
-  --chart-3: oklch(0.65 0.15 50);
-  --chart-4: oklch(0.55 0.18 280);
-  --chart-5: oklch(0.7 0.12 100);
-  --sidebar: oklch(0.985 0.005 220);
-  --sidebar-foreground: oklch(0.18 0.02 230);
-  --sidebar-primary: oklch(0.45 0.11 200);
-  --sidebar-primary-foreground: oklch(0.99 0.005 220);
-  --sidebar-accent: oklch(0.93 0.02 210);
-  --sidebar-accent-foreground: oklch(0.25 0.04 210);
-  --sidebar-border: oklch(0.9 0.015 220);
-  --sidebar-ring: oklch(0.45 0.11 200);
+  --radius: 5px;
+  /* پالت SeaRates - آبی روشن، سرمه‌ای تیره، پس‌زمینه سفید */
+  --background: #ffffff;
+  --foreground: rgba(0, 0, 0, 0.85);
+  --card: #ffffff;
+  --card-foreground: rgba(0, 0, 0, 0.85);
+  --popover: #ffffff;
+  --popover-foreground: rgba(0, 0, 0, 0.85);
+  /* رنگ اصلی SeaRates - آبی روشن */
+  --primary: #0088ff;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f5f5;
+  --secondary-foreground: rgba(0, 0, 0, 0.85);
+  --muted: #fafafa;
+  --muted-foreground: rgba(0, 0, 0, 0.45);
+  --accent: #e6f7ff;
+  --accent-foreground: #0088ff;
+  --destructive: #ff4d4f;
+  --border: #e8e8e8;
+  --input: #d9d9d9;
+  --ring: #0088ff;
+  /* سرتیتر SeaRates - سرمه‌ای تیره */
+  --sr-heading: #15354e;
+  /* متن آبی SeaRates */
+  --sr-blue: #0088ff;
+  --sr-blue-light: #e6f7ff;
+  --chart-1: #0088ff;
+  --chart-2: #52c41a;
+  --chart-3: #faad14;
+  --chart-4: #ff4d4f;
+  --chart-5: #722ed1;
+  --sidebar: #ffffff;
+  --sidebar-foreground: rgba(0, 0, 0, 0.85);
+  --sidebar-primary: #0088ff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e6f7ff;
+  --sidebar-accent-foreground: #0088ff;
+  --sidebar-border: #e8e8e8;
+  --sidebar-ring: #0088ff;
 }
 
 .dark {
-  --background: oklch(0.15 0.02 230);
-  --foreground: oklch(0.96 0.005 220);
-  --card: oklch(0.2 0.02 230);
-  --card-foreground: oklch(0.96 0.005 220);
-  --popover: oklch(0.2 0.02 230);
-  --popover-foreground: oklch(0.96 0.005 220);
-  --primary: oklch(0.65 0.13 190);
-  --primary-foreground: oklch(0.15 0.02 230);
-  --secondary: oklch(0.27 0.025 220);
-  --secondary-foreground: oklch(0.96 0.005 220);
-  --muted: oklch(0.27 0.025 220);
-  --muted-foreground: oklch(0.7 0.02 220);
-  --accent: oklch(0.32 0.04 200);
-  --accent-foreground: oklch(0.96 0.005 220);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.65 0.13 190);
-  --chart-1: oklch(0.65 0.13 190);
-  --chart-2: oklch(0.7 0.15 180);
-  --chart-3: oklch(0.7 0.15 50);
-  --chart-4: oklch(0.6 0.18 280);
-  --chart-5: oklch(0.75 0.12 100);
-  --sidebar: oklch(0.2 0.02 230);
-  --sidebar-foreground: oklch(0.96 0.005 220);
-  --sidebar-primary: oklch(0.65 0.13 190);
-  --sidebar-primary-foreground: oklch(0.15 0.02 230);
-  --sidebar-accent: oklch(0.27 0.025 220);
-  --sidebar-accent-foreground: oklch(0.96 0.005 220);
-  --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: oklch(0.65 0.13 190);
+  --background: #0a1929;
+  --foreground: rgba(255, 255, 255, 0.85);
+  --card: #102439;
+  --card-foreground: rgba(255, 255, 255, 0.85);
+  --popover: #102439;
+  --popover-foreground: rgba(255, 255, 255, 0.85);
+  --primary: #1890ff;
+  --primary-foreground: #ffffff;
+  --secondary: #1d3358;
+  --secondary-foreground: rgba(255, 255, 255, 0.85);
+  --muted: #1d3358;
+  --muted-foreground: rgba(255, 255, 255, 0.45);
+  --accent: #1e3a5f;
+  --accent-foreground: #40a9ff;
+  --destructive: #ff7875;
+  --border: #1d3358;
+  --input: #1d3358;
+  --ring: #1890ff;
+  --sidebar: #102439;
+  --sidebar-foreground: rgba(255, 255, 255, 0.85);
+  --sidebar-primary: #1890ff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1e3a5f;
+  --sidebar-accent-foreground: #40a9ff;
+  --sidebar-border: #1d3358;
+  --sidebar-ring: #1890ff;
 }
 
 @layer base {
@@ -120,24 +120,24 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "ss01" on, "ss02" on;
+    font-feature-settings: "ss01" on;
   }
-  /* تنظیمات راست‌چین */
   html[dir="rtl"] {
     direction: rtl;
   }
-  /* اعداد فارسی در body به صورت پیش‌فرض */
   body {
     font-variant-numeric: tabular-nums;
   }
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--sr-heading);
+    font-weight: 600;
+  }
 }
 
-/* استایل‌های اضافی برای نمایش بهتر فارسی */
 @layer utilities {
   .persian-numbers {
     font-feature-settings: "ss01" on;
   }
-  /* اسکرول‌بار سفارشی */
   .scrollbar-fa::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -146,24 +146,69 @@
     background: transparent;
   }
   .scrollbar-fa::-webkit-scrollbar-thumb {
-    background: oklch(0.7 0.02 220);
+    background: #d9d9d9;
     border-radius: 4px;
   }
   .scrollbar-fa::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.5 0.05 220);
+    background: #0088ff;
   }
-  /* انیمیشن ورود */
   @keyframes fade-in-up {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
   }
   .animate-fade-in-up {
-    animation: fade-in-up 0.4s ease-out;
+    animation: fade-in-up 0.3s ease-out;
+  }
+  /* استایل‌های الهام‌گرفته از Ant Design */
+  .sr-input {
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    padding: 4px 11px;
+    height: 32px;
+    background: #ffffff;
+    transition: all 0.2s;
+  }
+  .sr-input:hover {
+    border-color: #0088ff;
+  }
+  .sr-input:focus {
+    border-color: #0088ff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 136, 255, 0.2);
+  }
+  .sr-btn-primary {
+    background: #0088ff;
+    color: #ffffff;
+    border: 1px solid #0088ff;
+    border-radius: 5px;
+    padding: 5.5px 30px;
+    transition: all 0.2s;
+    font-weight: 400;
+  }
+  .sr-btn-primary:hover:not(:disabled) {
+    background: #40a9ff;
+    border-color: #40a9ff;
+  }
+  .sr-btn-primary:disabled {
+    background: #d9d9d9;
+    border-color: #d9d9d9;
+    color: rgba(0, 0, 0, 0.45);
+    cursor: not-allowed;
+  }
+  .sr-btn-default {
+    background: #ffffff;
+    color: rgba(0, 0, 0, 0.85);
+    border: 1px solid #d9d9d9;
+    border-radius: 5px;
+    padding: 5.5px 16px;
+    transition: all 0.2s;
+  }
+  .sr-btn-default:hover {
+    color: #0088ff;
+    border-color: #0088ff;
+  }
+  /* پس‌زمینه بدنه با رنگ روشن خاکستری */
+  .sr-bg-body {
+    background: #f5f5f5;
   }
 }
