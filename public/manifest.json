@@ -1,0 +1,21 @@
+{
+  "name": "ماشین‌حساب بار - SeaRates فارسی",
+  "short_name": "محاسبه بار",
+  "description": "ابزار فارسی و راست‌چین برای محاسبه و چیدمان بار در کانتینر",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f766e",
+  "lang": "fa",
+  "dir": "rtl",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
