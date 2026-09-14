@@ -120,6 +120,12 @@ export default function Home() {
   const [selectedContainerId, setSelectedContainerId] = useState("40ft-std");
   const [showInfo, setShowInfo] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
+
+  // ریست اسکرول داخلی هنگام تغییر ابزار/مرحله (اپ‌مانند)
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0 });
+  }, [toolMode, currentStep]);
 
   /* ---------- پشتیبانی دکمه Back در WebView (دیوار/مایکت/مرورگر موبایل) ---------- */
   const skipPush = useRef(false);
@@ -208,9 +214,9 @@ export default function Home() {
   const container = getSelectedContainer(selectedContainerId);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f5f5f5]">
+    <div className="flex flex-col h-[100dvh] overflow-hidden md:h-auto md:min-h-screen md:overflow-visible bg-[#f5f5f5]">
       {/* هدر - بهینه برای موبایل با safe-area */}
-      <header className="sticky top-0 z-30 bg-white border-b border-[#e8e8e8] safe-top">
+      <header className="shrink-0 sticky top-0 z-30 bg-white border-b border-[#e8e8e8] safe-top">
         <div className="max-w-[1200px] mx-auto px-3 sm:px-6">
           <div className="flex items-center justify-between h-14">
             {/* لوگو */}
@@ -292,8 +298,8 @@ export default function Home() {
         </div>
       </header>
 
-      {/* عنوان صفحه - در موبایل کامپکت اپ‌مانند */}
-      <div className="bg-white border-b border-[#e8e8e8]">
+      {/* عنوان صفحه - در موبایل کامپکت اپ‌مانند (بخش ثابت پوسته) */}
+      <div className="shrink-0 bg-white border-b border-[#e8e8e8]">
         <div className="max-w-[1200px] mx-auto px-3 sm:px-6 py-2.5 sm:py-8">
           <h1 className="text-base sm:text-3xl font-semibold text-[#15354e]">
             محاسبه بار و چیدمان
@@ -335,23 +341,31 @@ export default function Home() {
         </div>
       </div>
 
-      {/* محتوای ابزار */}
-      <main className="flex-1 max-w-[1200px] mx-auto w-full px-2.5 sm:px-6 py-3 sm:py-6">
+      {/* ویزارد استپر - ثابت زیر عنوان (فقط حالت چیدمان بار) */}
+      {toolMode === "load" && (
+        <div className="shrink-0 w-full max-w-[1200px] mx-auto px-2.5 sm:px-6 pt-3 sm:pt-6">
+          <WizardStepper
+            steps={STEPS}
+            currentStep={currentStep}
+            onStepClick={goToStep}
+            maxReachedStep={maxReachedStep}
+          />
+        </div>
+      )}
+
+      {/* محتوای ابزار - در موبایل اسکرول داخلی (اپ‌مانند)، بدنه صفحه اسکرول عمودی ندارد */}
+      <main
+        ref={mainRef}
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain w-full max-w-[1200px] mx-auto px-2.5 sm:px-6 py-3 sm:py-6"
+      >
         {toolMode === "cbm" ? (
           <div className="animate-fade-in-up">
             <CbmCalculator />
           </div>
         ) : (
           <>
-            <WizardStepper
-              steps={STEPS}
-              currentStep={currentStep}
-              onStepClick={goToStep}
-              maxReachedStep={maxReachedStep}
-            />
-
             {currentStep === "products" && (
-              <div className="animate-fade-in-up mt-4">
+              <div className="animate-fade-in-up">
                 <ProductsStep
                   groups={groups}
                   products={products}
@@ -442,25 +456,22 @@ export default function Home() {
         </div>
       </section>
 
-      {/* فوتر - در موبایل یک خط کوتاه اپ‌مانند */}
-      <footer className="bg-[#15354e] text-white">
+      {/* فوتر - فقط دسکتاپ؛ موبایل اپ‌مانند بدون فوتر */}
+      <footer className="hidden md:block bg-[#15354e] text-white">
         <div className="max-w-[1200px] mx-auto px-3 sm:px-6 py-3 sm:py-6 text-center text-xs sm:text-sm">
-          <p className="hidden sm:block mb-1">
+          <p className="mb-1">
             ماشین‌حساب بار و CBM فارسی — محاسبه حجم، وزن حجمی و چیدمان سه‌بعدی کانتینر و کامیون.
           </p>
-          <p className="hidden sm:block text-white/60 text-[10px] sm:text-xs">
+          <p className="text-white/60 text-[10px] sm:text-xs">
             تمامی محاسبات به صورت محلی در مرورگر شما انجام می‌شود. این ابزار جایگزین مشاوره تخصصی بارگیری نیست.
           </p>
-          <p className="sm:hidden text-[10px] text-white/60">LoadCalc — محاسبات به‌صورت محلی روی دستگاه شما</p>
         </div>
-        {/* فاصله برای نوار ناوبری موبایل */}
-        <div aria-hidden className="h-[64px] md:hidden safe-bottom" />
       </footer>
 
-      {/* نوار ناوبری پایین - مخصوص موبایل (اپ‌مانند) */}
+      {/* نوار ناوبری پایین - مخصوص موبایل، درون جریان پوسته (نه fixed) */}
       <nav
         aria-label="ناوبری اصلی"
-        className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-white border-t border-[#e8e8e8] safe-bottom shadow-[0_-2px_10px_rgba(0,0,0,0.04)]"
+        className="shrink-0 md:hidden bg-white border-t border-[#e8e8e8] safe-bottom shadow-[0_-2px_10px_rgba(0,0,0,0.04)]"
       >
         <div className="grid grid-cols-2 h-16 max-w-[560px] mx-auto">
           <button
@@ -530,7 +541,7 @@ export default function Home() {
       <button
         type="button"
         onClick={() => setShowInfo(true)}
-        className="fixed left-3 sm:left-4 bottom-[calc(72px+env(safe-area-inset-bottom,0px))] sm:bottom-4 size-11 rounded-full bg-[#0088ff] text-white shadow-lg flex items-center justify-center hover:bg-[#40a9ff] active:bg-[#007ae6] transition-colors z-30"
+        className="fixed left-3 sm:left-4 bottom-[calc(72px+env(safe-area-inset-bottom,0px))] md:bottom-4 size-11 rounded-full bg-[#0088ff] text-white shadow-lg flex items-center justify-center hover:bg-[#40a9ff] active:bg-[#007ae6] transition-colors z-30"
         title="راهنما"
         aria-label="راهنمای استفاده"
       >
