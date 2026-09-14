@@ -15,6 +15,7 @@ import {
   type CbmLengthUnit,
 } from "@/lib/cbm";
 import { faNumber } from "@/lib/containers";
+import { ProformaDialog, ProformaPrint, type ProformaData } from "./proforma";
 import {
   Plus,
   Copy,
@@ -29,6 +30,7 @@ import {
   Weight,
   Scale,
   FileSpreadsheet,
+  FileText,
   CircleDollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -66,10 +68,50 @@ export function CbmCalculator() {
   const [rows, setRows] = useState<PackageRow[]>([newRow("pallet")]);
   const [mode, setMode] = useState<FreightMode>("sea");
   const [unit, setUnit] = useState<CbmLengthUnit>("mm");
+  const [proformaOpen, setProformaOpen] = useState(false);
+  const [proformaData, setProformaData] = useState<ProformaData | null>(null);
 
-  const results = useMemo(() => rows.map((r) => calcPackageCbm(r)), [rows]);
-  const totals = useMemo(() => calcCbmTotals(rows, mode), [rows, mode]);
+  // تبدیل مقادیر ورودی (واحد انتخابی) به میلی‌متر برای محاسبه
+  const rowsMm = useMemo<PackageRow[]>(
+    () =>
+      rows.map((r) => ({
+        ...r,
+        length: String((parseFloat(r.length) || 0) * UNIT_FACTOR[unit]),
+        width: String((parseFloat(r.width) || 0) * UNIT_FACTOR[unit]),
+        height: String((parseFloat(r.height) || 0) * UNIT_FACTOR[unit]),
+        diameter: String((parseFloat(r.diameter) || 0) * UNIT_FACTOR[unit]),
+      })),
+    [rows, unit]
+  );
+
+  const results = useMemo(() => rowsMm.map((r) => calcPackageCbm(r)), [rowsMm]);
+  const totals = useMemo(() => calcCbmTotals(rowsMm, mode), [rowsMm, mode]);
   const selectedMode = FREIGHT_MODES.find((m) => m.value === mode)!;
+
+  // تبدیل مقدار میلی‌متر به واحد فعلی برای نمایش/پیش‌فرض‌ها
+  const mmToUnit = (mm: number) =>
+    String(Math.round((mm / UNIT_FACTOR[unit]) * 100) / 100);
+
+  // تغییر واحد: مقادیر وارد‌شده تبدیل شوند تا فیزیکی ثابت بمانند
+  const changeUnit = (u: CbmLengthUnit) => {
+    if (u === unit) return;
+    const from = UNIT_FACTOR[unit];
+    const to = UNIT_FACTOR[u];
+    const conv = (v: string) => {
+      const n = parseFloat(v) || 0;
+      return String(Math.round(((n * from) / to) * 100) / 100);
+    };
+    setRows((prev) =>
+      prev.map((r) => ({
+        ...r,
+        length: conv(r.length),
+        width: conv(r.width),
+        height: conv(r.height),
+        diameter: conv(r.diameter),
+      }))
+    );
+    setUnit(u);
+  };
 
   const updateRow = (id: string, field: keyof PackageRow, value: string) => {
     setRows((prev) =>
@@ -84,31 +126,31 @@ export function CbmCalculator() {
             next.width = "0";
             next.height = info.roundSecond === "length" ? "0" : next.height;
             next.length = info.roundSecond === "length" ? next.length : "0";
-            if (t === "drum" && (parseFloat(next.diameter) || 0) === 0) next.diameter = "600";
-            if (t === "cylinder" && (parseFloat(next.diameter) || 0) === 0) next.diameter = "400";
-            if (t === "roll" && (parseFloat(next.diameter) || 0) === 0) next.diameter = "400";
-            if (info.roundSecond === "height" && (parseFloat(next.height) || 0) === 0) next.height = "900";
-            if (info.roundSecond === "length" && (parseFloat(next.length) || 0) === 0) next.length = "1200";
+            if (t === "drum" && (parseFloat(next.diameter) || 0) === 0) next.diameter = mmToUnit(600);
+            if (t === "cylinder" && (parseFloat(next.diameter) || 0) === 0) next.diameter = mmToUnit(400);
+            if (t === "roll" && (parseFloat(next.diameter) || 0) === 0) next.diameter = mmToUnit(400);
+            if (info.roundSecond === "height" && (parseFloat(next.height) || 0) === 0) next.height = mmToUnit(900);
+            if (info.roundSecond === "length" && (parseFloat(next.length) || 0) === 0) next.length = mmToUnit(1200);
           } else {
             next.diameter = "0";
-            if ((parseFloat(next.length) || 0) === 0) next.length = "500";
-            if ((parseFloat(next.width) || 0) === 0) next.width = "400";
-            if ((parseFloat(next.height) || 0) === 0) next.height = "300";
+            if ((parseFloat(next.length) || 0) === 0) next.length = mmToUnit(500);
+            if ((parseFloat(next.width) || 0) === 0) next.width = mmToUnit(400);
+            if ((parseFloat(next.height) || 0) === 0) next.height = mmToUnit(300);
           }
           if (t === "pallet") {
             next.palletType = "eur";
             const pt = getPalletType("eur");
-            next.length = String(pt.length);
-            next.width = String(pt.width);
-            if ((parseFloat(next.height) || 0) === 0) next.height = "1000";
+            next.length = mmToUnit(pt.length);
+            next.width = mmToUnit(pt.width);
+            if ((parseFloat(next.height) || 0) === 0) next.height = mmToUnit(1000);
           }
         }
         // با تغییر نوع پالت، ابعاد به‌روزرسانی شوند
         if (field === "palletType" && next.type === "pallet") {
           const pt = getPalletType(value);
           if (pt.value !== "custom") {
-            next.length = String(pt.length);
-            next.width = String(pt.width);
+            next.length = mmToUnit(pt.length);
+            next.width = mmToUnit(pt.width);
           }
         }
         return next;
@@ -125,9 +167,12 @@ export function CbmCalculator() {
   const removeRow = (id: string) => setRows((prev) => prev.filter((r) => r.id !== id));
 
   const applyPresetDims = (id: string, dims: { length: number; width: number }) => {
+    // dims بر حسب میلی‌متر است؛ به واحد فعلی تبدیل شود
     setRows((prev) =>
       prev.map((r) =>
-        r.id === id ? { ...r, length: String(dims.length), width: String(dims.width) } : r
+        r.id === id
+          ? { ...r, length: mmToUnit(dims.length), width: mmToUnit(dims.width) }
+          : r
       )
     );
   };
@@ -147,7 +192,7 @@ export function CbmCalculator() {
             <button
               key={u}
               type="button"
-              onClick={() => setUnit(u)}
+              onClick={() => changeUnit(u)}
               className={cn(
                 "px-4 py-1.5 text-xs transition-colors",
                 unit === u
@@ -269,7 +314,9 @@ export function CbmCalculator() {
                         {PALLET_TYPES.map((p) => (
                           <option key={p.value} value={p.value}>
                             پالت {p.fa}
-                            {p.value !== "custom" ? ` - ${faNumber(p.length)}×${faNumber(p.width)}` : ""}
+                            {p.value !== "custom"
+                              ? ` - ${faNumber(p.length / UNIT_FACTOR[unit])}×${faNumber(p.width / UNIT_FACTOR[unit])}`
+                              : ""}
                           </option>
                         ))}
                       </select>
@@ -435,11 +482,22 @@ export function CbmCalculator() {
 
       {/* نتایج */}
       <div className="bg-white border border-[#e8e8e8] rounded-sm">
-        <div className="p-3 border-b border-[#e8e8e8] bg-[#fafafa] flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-[#15354e]">نتیجه محاسبه CBM</h3>
-          <span className="text-[10px] text-[rgba(0,0,0,0.45)]">
-            شیوه حمل: {selectedMode.fa}
-          </span>
+        <div className="p-3 border-b border-[#e8e8e8] bg-[#fafafa] flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-[#15354e] whitespace-nowrap">نتیجه محاسبه CBM</h3>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-[10px] text-[rgba(0,0,0,0.45)] whitespace-nowrap">
+              شیوه حمل: {selectedMode.fa}
+            </span>
+            <button
+              type="button"
+              onClick={() => setProformaOpen(true)}
+              disabled={!hasValid}
+              className="inline-flex items-center gap-1.5 text-[11px] px-3 py-2 rounded-sm bg-[#15354e] text-white font-medium hover:bg-[#1f4a6b] active:bg-[#12293c] transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[40px] whitespace-nowrap"
+            >
+              <FileText className="size-3.5" />
+              صدور پیش‌فاکتور
+            </button>
+          </div>
         </div>
 
         <div className="p-3 grid grid-cols-2 lg:grid-cols-5 gap-3 stagger">
@@ -556,6 +614,31 @@ export function CbmCalculator() {
           </div>
         )}
       </div>
+
+      {/* پیش‌فاکتور */}
+      {proformaOpen && (
+        <ProformaDialog
+          rows={rowsMm}
+          totals={totals}
+          mode={mode}
+          unit={unit}
+          onClose={() => setProformaOpen(false)}
+          onIssue={(d) => {
+            setProformaData(d);
+            setProformaOpen(false);
+          }}
+        />
+      )}
+      {proformaData && (
+        <ProformaPrint
+          data={proformaData}
+          rows={rowsMm}
+          totals={totals}
+          mode={mode}
+          unit={unit}
+          onDone={() => setProformaData(null)}
+        />
+      )}
     </div>
   );
 }
