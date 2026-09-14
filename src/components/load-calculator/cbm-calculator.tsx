@@ -169,7 +169,7 @@ export function CbmCalculator() {
             وزن حجمی بر اساس ضریب استاندارد هر شیوه حمل محاسبه می‌شود.
           </p>
         </div>
-        <div className="p-3 grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="p-3 grid grid-cols-2 md:grid-cols-4 gap-2 stagger">
           {FREIGHT_MODES.map((m) => {
             const Icon = MODE_ICONS[m.icon];
             const active = mode === m.value;
@@ -442,7 +442,7 @@ export function CbmCalculator() {
           </span>
         </div>
 
-        <div className="p-3 grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="p-3 grid grid-cols-2 lg:grid-cols-5 gap-3 stagger">
           <div className="border border-[#e8e8e8] rounded-md p-3 text-center bg-[#fafafa]">
             <div className="flex items-center justify-center gap-1 text-xs text-[rgba(0,0,0,0.65)] mb-1.5">
               <Boxes className="size-3.5" />
@@ -502,9 +502,9 @@ export function CbmCalculator() {
           </div>
         </div>
 
-        {/* مقایسه شیوه‌های حمل */}
+        {/* مقایسه شیوه‌های حمل - دسکتاپ؛ در موبایل کارت‌های بالا همین info را دارند (بدون اسکرول افقی) */}
         {hasValid && (
-          <div className="border-t border-[#f0f0f0] p-3">
+          <div className="hidden sm:block border-t border-[#f0f0f0] p-3">
             <h4 className="text-xs font-semibold text-[#15354e] mb-2">
               مقایسه وزن قابل احتساب در شیوه‌های حمل
             </h4>

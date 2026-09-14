@@ -48,8 +48,8 @@ export function ResultStep({ result, container, onBack, onRestart }: Props) {
       </div>
 
       <div className="p-4 space-y-4">
-        {/* شاخص‌ها */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {/* شاخص‌ها - با انیمیشن پلکانی */}
+        <div className="stagger grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="border border-[#e8e8e8] rounded-md p-3 text-center bg-[#fafafa]">
             <div className="flex items-center justify-center gap-1 text-xs text-[rgba(0,0,0,0.65)] mb-1.5">
               <Box className="size-3.5" />
@@ -139,14 +139,58 @@ export function ResultStep({ result, container, onBack, onRestart }: Props) {
           )}
         </div>
 
-        {/* جزئیات هر محصول */}
+        {/* جزئیات هر محصول - موبایل: کارت بدون اسکرول افقی | دسکتاپ: جدول */}
         <div className="border border-[#e8e8e8] rounded-md overflow-hidden">
           <div className="px-3 py-2 bg-[#fafafa] border-b border-[#e8e8e8]">
             <h4 className="text-xs font-semibold text-[#15354e]">
               جزئیات چیدمان هر محصول
             </h4>
           </div>
-          <div className="overflow-x-auto scrollbar-fa">
+
+          {/* موبایل: کارت‌های کامپکت */}
+          <div className="md:hidden divide-y divide-[#f0f0f0] stagger">
+            {result.placements.map((p) => (
+              <div key={p.productId} className="p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className="size-4 rounded-sm border border-[#d9d9d9] shrink-0"
+                      style={{ backgroundColor: p.color }}
+                    />
+                    <span className="text-xs font-semibold text-[#15354e] truncate">{p.name}</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-[#52c41a] bg-[#f6ffed] border border-[#b7eb8f] rounded-full px-2 py-0.5 shrink-0 tabular-nums">
+                    جاگرفته {faN(p.placed)}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
+                  <div className="flex justify-between gap-1 bg-[#fafafa] rounded-sm px-2 py-1">
+                    <span className="text-[rgba(0,0,0,0.45)]">ابعاد مؤثر</span>
+                    <span className="tabular-nums text-[#15354e]">
+                      {faN(p.effLength, 0)}×{faN(p.effWidth, 0)}×{faN(p.effHeight, 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-1 bg-[#fafafa] rounded-sm px-2 py-1">
+                    <span className="text-[rgba(0,0,0,0.45)]">چیدمان</span>
+                    <span className="tabular-nums text-[#15354e]">
+                      {faN(p.layoutL)}×{faN(p.layoutW)}×{faN(p.layoutH)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-1 bg-[#fafafa] rounded-sm px-2 py-1">
+                    <span className="text-[rgba(0,0,0,0.45)]">باقی‌مانده</span>
+                    <span className="tabular-nums text-[#ff4d4f] font-medium">{faN(p.remaining)}</span>
+                  </div>
+                  <div className="flex justify-between gap-1 bg-[#fafafa] rounded-sm px-2 py-1">
+                    <span className="text-[rgba(0,0,0,0.45)]">جهت</span>
+                    <span className="text-[#15354e] text-[10px]">{p.orientationLabel}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* دسکتاپ: جدول کامل */}
+          <div className="hidden md:block overflow-x-auto scrollbar-fa">
             <table className="w-full text-xs min-w-[560px]">
               <thead className="bg-[#fafafa] border-b border-[#e8e8e8]">
                 <tr>

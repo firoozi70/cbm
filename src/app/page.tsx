@@ -120,6 +120,7 @@ export default function Home() {
   const [selectedContainerId, setSelectedContainerId] = useState("40ft-std");
   const [showInfo, setShowInfo] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [navDir, setNavDir] = useState<"fwd" | "back">("fwd");
   const mainRef = useRef<HTMLElement>(null);
 
   // ریست اسکرول داخلی هنگام تغییر ابزار/مرحله (اپ‌مانند)
@@ -167,6 +168,7 @@ export default function Home() {
   const goToStep = (step: StepId) => {
     const idx = STEPS.findIndex((s) => s.id === step);
     if (idx <= maxReachedStep) {
+      setNavDir(idx < STEPS.findIndex((s) => s.id === currentStep) ? "back" : "fwd");
       setCurrentStep(step);
     }
   };
@@ -175,6 +177,7 @@ export default function Home() {
     const idx = STEPS.findIndex((s) => s.id === currentStep);
     if (idx < STEPS.length - 1) {
       const nextStep = STEPS[idx + 1];
+      setNavDir("fwd");
       setCurrentStep(nextStep.id);
       setMaxReachedStep(Math.max(maxReachedStep, idx + 1));
     }
@@ -183,6 +186,7 @@ export default function Home() {
   const back = () => {
     const idx = STEPS.findIndex((s) => s.id === currentStep);
     if (idx > 0) {
+      setNavDir("back");
       setCurrentStep(STEPS[idx - 1].id);
     }
   };
@@ -359,13 +363,13 @@ export default function Home() {
         className="flex-1 min-h-0 overflow-y-auto overscroll-contain w-full max-w-[1200px] mx-auto px-2.5 sm:px-6 py-3 sm:py-6"
       >
         {toolMode === "cbm" ? (
-          <div className="animate-fade-in-up">
+          <div key="cbm" className="animate-step-fwd">
             <CbmCalculator />
           </div>
         ) : (
           <>
             {currentStep === "products" && (
-              <div className="animate-fade-in-up">
+              <div key="products" className={navDir === "fwd" ? "animate-step-fwd" : "animate-step-back"}>
                 <ProductsStep
                   groups={groups}
                   products={products}
@@ -379,7 +383,7 @@ export default function Home() {
             )}
 
             {currentStep === "containers" && (
-              <div className="animate-fade-in-up">
+              <div key="containers" className={navDir === "fwd" ? "animate-step-fwd" : "animate-step-back"}>
                 <ContainersStep
                   selectedId={selectedContainerId}
                   onSelect={setSelectedContainerId}
@@ -390,7 +394,7 @@ export default function Home() {
             )}
 
             {currentStep === "result" && stuffingResult && (
-              <div className="animate-fade-in-up">
+              <div key="result" className={navDir === "fwd" ? "animate-step-fwd" : "animate-step-back"}>
                 <ResultStep
                   result={stuffingResult}
                   container={container}

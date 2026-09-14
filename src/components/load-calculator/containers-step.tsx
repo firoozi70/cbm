@@ -86,7 +86,7 @@ export function ContainersStep({ selectedId, onSelect, onNext, onBack }: Props) 
             کانتینرها
           </h4>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 stagger">
           {CONTAINERS.map((c) => (
             <button
               key={c.id}
@@ -150,7 +150,7 @@ export function ContainersStep({ selectedId, onSelect, onNext, onBack }: Props) 
             کامیون‌ها
           </h4>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 stagger">
           {TRUCKS.map((t) => (
             <button
               key={t.id}

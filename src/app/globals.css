@@ -199,6 +199,49 @@
   .animate-fade-in-up {
     animation: fade-in-up 0.3s ease-out;
   }
+
+  /* ---------- انیمیشن گذار بین مراحل (اپ‌مانند، جهت‌دار RTL) ---------- */
+  @keyframes step-fwd {
+    from { opacity: 0; transform: translateX(-28px); } /* در RTL جلو = ورود از چپ */
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes step-back {
+    from { opacity: 0; transform: translateX(28px); } /* برگشت = ورود از راست */
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .animate-step-fwd {
+    animation: step-fwd 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .animate-step-back {
+    animation: step-back 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* ---------- ظاهر شدن پلکانی کارت‌ها (stagger) ---------- */
+  @keyframes rise-in {
+    from { opacity: 0; transform: translateY(14px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .stagger > * {
+    animation: rise-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .stagger > *:nth-child(1) { animation-delay: 0.03s; }
+  .stagger > *:nth-child(2) { animation-delay: 0.09s; }
+  .stagger > *:nth-child(3) { animation-delay: 0.15s; }
+  .stagger > *:nth-child(4) { animation-delay: 0.21s; }
+  .stagger > *:nth-child(5) { animation-delay: 0.27s; }
+  .stagger > *:nth-child(6) { animation-delay: 0.33s; }
+  .stagger > *:nth-child(7) { animation-delay: 0.39s; }
+  .stagger > *:nth-child(n + 8) { animation-delay: 0.45s; }
+
+  /* احترام به تنظیمات کاهش حرکت کاربر */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade-in-up,
+    .animate-step-fwd,
+    .animate-step-back,
+    .stagger > * {
+      animation: none !important;
+    }
+  }
   /* استایل‌های الهام‌گرفته از Ant Design */
   .sr-input {
     border: 1px solid #d9d9d9;
