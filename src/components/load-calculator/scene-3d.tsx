@@ -5,7 +5,8 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, ContactShadows, Html } from "@react-three/drei";
 import * as THREE from "three";
 import { BoxInstance } from "@/lib/load-calculation";
-import { ContainerSpec, faNumber } from "@/lib/containers";
+import { ContainerSpec } from "@/lib/containers";
+import { useTranslation } from "@/i18n/context";
 import { RotateCw, Maximize, Play, Pause, Box as BoxIcon } from "lucide-react";
 
 /* ------------------------- ابزارهای کمکی ------------------------- */
@@ -155,11 +156,66 @@ function ContainerShell({ container }: { container: ContainerSpec }) {
 /* --------------------- برچسب ابعاد --------------------- */
 
 function DimensionLabels({ container }: { container: ContainerSpec }) {
+  const { formatNumber, locale, isRtl } = useTranslation();
   const cL = container.internalLength;
   const cH = container.internalHeight;
   const cW = container.internalWidth;
   const labelStyle =
-    "pointer-events-none select-none whitespace-nowrap rounded bg-[#15354e]/85 px-2 py-0.5 text-[10px] text-white shadow-sm";
+    "pointer-events-none select-none whitespace-nowrap rounded bg-[#15354e]/85 px-2 py-0.5 text-[10px] text-white shadow-sm tabular-nums";
+
+  const lengthLabels: Record<string, string> = {
+    fa: "طول",
+    en: "Length",
+    ar: "الطول",
+    zh: "长",
+    ru: "Длина",
+    tr: "Uzunluk",
+    es: "Largo",
+    de: "Länge",
+    fr: "Longueur",
+  };
+
+  const widthLabels: Record<string, string> = {
+    fa: "عرض",
+    en: "Width",
+    ar: "العرض",
+    zh: "宽",
+    ru: "Ширина",
+    tr: "Genişlik",
+    es: "Ancho",
+    de: "Breite",
+    fr: "Largeur",
+  };
+
+  const heightLabels: Record<string, string> = {
+    fa: "ارتفاع",
+    en: "Height",
+    ar: "الارتفاع",
+    zh: "高",
+    ru: "Высота",
+    tr: "Yükseklik",
+    es: "Alto",
+    de: "Höhe",
+    fr: "Hauteur",
+  };
+
+  const cmUnits: Record<string, string> = {
+    fa: "سانتی‌متر",
+    en: "cm",
+    ar: "سم",
+    zh: "厘米",
+    ru: "см",
+    tr: "cm",
+    es: "cm",
+    de: "cm",
+    fr: "cm",
+  };
+
+  const lText = lengthLabels[locale] || lengthLabels.en;
+  const wText = widthLabels[locale] || widthLabels.en;
+  const hText = heightLabels[locale] || heightLabels.en;
+  const unitText = cmUnits[locale] || cmUnits.en;
+
   return (
     <>
       <Html
@@ -168,8 +224,8 @@ function DimensionLabels({ container }: { container: ContainerSpec }) {
         zIndexRange={[10, 0]}
         style={{ pointerEvents: "none" }}
       >
-        <div className={labelStyle} dir="rtl">
-          طول {faNumber(cL, 0)} سانتی‌متر
+        <div className={labelStyle} dir={isRtl ? "rtl" : "ltr"}>
+          {lText} {formatNumber(cL, 0)} {unitText}
         </div>
       </Html>
       <Html
@@ -178,8 +234,8 @@ function DimensionLabels({ container }: { container: ContainerSpec }) {
         zIndexRange={[10, 0]}
         style={{ pointerEvents: "none" }}
       >
-        <div className={labelStyle} dir="rtl">
-          عرض {faNumber(cW, 0)}
+        <div className={labelStyle} dir={isRtl ? "rtl" : "ltr"}>
+          {wText} {formatNumber(cW, 0)} {unitText}
         </div>
       </Html>
       <Html
@@ -188,8 +244,8 @@ function DimensionLabels({ container }: { container: ContainerSpec }) {
         zIndexRange={[10, 0]}
         style={{ pointerEvents: "none" }}
       >
-        <div className={labelStyle} dir="rtl">
-          ارتفاع {faNumber(cH, 0)}
+        <div className={labelStyle} dir={isRtl ? "rtl" : "ltr"}>
+          {hText} {formatNumber(cH, 0)} {unitText}
         </div>
       </Html>
     </>
@@ -261,6 +317,7 @@ export interface Scene3DProps {
 }
 
 export default function Scene3D({ boxes, container }: Scene3DProps) {
+  const { formatNumber, locale } = useTranslation();
   const [resetKey, setResetKey] = useState(0);
   const [playKey, setPlayKey] = useState(0);
   const [autoRotate, setAutoRotate] = useState(false);
@@ -276,6 +333,108 @@ export default function Scene3D({ boxes, container }: Scene3DProps) {
     setAnimDone(false);
   };
 
+  const labels = {
+    rotate: {
+      fa: "چرخش",
+      en: "Rotate",
+      ar: "تدوير",
+      zh: "旋转",
+      ru: "Вращение",
+      tr: "Döndür",
+      es: "Girar",
+      de: "Drehen",
+      fr: "Pivoter",
+    }[locale] || "Rotate",
+    rotateTitle: {
+      fa: autoRotate ? "توقف چرخش خودکار" : "چرخش خودکار",
+      en: autoRotate ? "Stop Auto-Rotation" : "Auto-Rotate",
+      ar: autoRotate ? "إيقاف التدوير التلقائي" : "تدوير تلقائي",
+      zh: autoRotate ? "停止自动旋转" : "自动旋转",
+      ru: autoRotate ? "Остановить вращение" : "Автоповорот",
+      tr: autoRotate ? "Otomatik Dönüşü Durdur" : "Otomatik Döndür",
+      es: autoRotate ? "Detener rotación" : "Giro automático",
+      de: autoRotate ? "Drehung anhalten" : "Automatisch drehen",
+      fr: autoRotate ? "Arrêter la rotation" : "Rotation auto",
+    }[locale] || "Auto-Rotate",
+    reset: {
+      fa: "بازنشانی",
+      en: "Reset",
+      ar: "إعادة ضبط",
+      zh: "重置视角",
+      ru: "Сброс",
+      tr: "Sıfırla",
+      es: "Restablecer",
+      de: "Zurücksetzen",
+      fr: "Réinitialiser",
+    }[locale] || "Reset",
+    resetTitle: {
+      fa: "بازنشانی نما",
+      en: "Reset View",
+      ar: "إعادة ضبط العرض",
+      zh: "重置视角",
+      ru: "Сбросить вид",
+      tr: "Görünümü Sıfırla",
+      es: "Restablecer vista",
+      de: "Ansicht zurücksetzen",
+      fr: "Réinitialiser la vue",
+    }[locale] || "Reset View",
+    replay: {
+      fa: "انیمیشن",
+      en: "Animation",
+      ar: "حركة",
+      zh: "动画回放",
+      ru: "Анимация",
+      tr: "Animasyon",
+      es: "Animación",
+      de: "Animation",
+      fr: "Animation",
+    }[locale] || "Animation",
+    replayTitle: {
+      fa: "پخش دوباره انیمیشن چیدمان",
+      en: "Replay Loading Animation",
+      ar: "إعادة تشغيل حركة التحميل",
+      zh: "重播装箱动画",
+      ru: "Повторить анимацию погрузки",
+      tr: "Yükleme animasyonunu tekrar oynat",
+      es: "Repetir animación de carga",
+      de: "Ladeanimation wiederholen",
+      fr: "Rejouer l'animation de chargement",
+    }[locale] || "Replay Loading Animation",
+    gestureHint: {
+      fa: "برای چرخش بکشید • برای بزرگ‌نمایی اسکرول یا با دو انگشت بکشید",
+      en: "Drag to rotate • Scroll or pinch to zoom",
+      ar: "اسحب للتدوير • استخدم التمرير أو إصبعين للتكبير",
+      zh: "按住拖动以旋转 • 滚轮或双指捏合缩放",
+      ru: "Тяните для вращения • Колесико или жест пальцами для зума",
+      tr: "Döndürmek için sürükleyin • Yakınlaştırmak için kaydırın veya parmaklarınızı kıstırın",
+      es: "Arrastra para rotar • Desplaza o pellizca para zoom",
+      de: "Ziehen zum Drehen • Scrollen oder Aufziehen zum Zoomen",
+      fr: "Faites glisser pour pivoter • Défilez ou pincez pour zoomer",
+    }[locale] || "Drag to rotate • Scroll or pinch to zoom",
+    boxesUnit: {
+      fa: "جعبه",
+      en: "boxes",
+      ar: "صندوق",
+      zh: "箱",
+      ru: "коробок",
+      tr: "koli",
+      es: "cajas",
+      de: "Kartons",
+      fr: "colis",
+    }[locale] || "boxes",
+    interactive3d: {
+      fa: "نمای سه‌بعدی تعاملی",
+      en: "Interactive 3D View",
+      ar: "عرض ثلاثي الأبعاد تفاعلي",
+      zh: "3D 交互式视图",
+      ru: "Интерактивный 3D-вид",
+      tr: "Etkileşimli 3B Görünüm",
+      es: "Vista 3D Interactiva",
+      de: "Interaktive 3D-Ansicht",
+      fr: "Vue 3D Interactive",
+    }[locale] || "Interactive 3D View",
+  };
+
   return (
     <div className="relative w-full">
       {/* نوار ابزار */}
@@ -288,28 +447,28 @@ export default function Scene3D({ boxes, container }: Scene3DProps) {
               ? "border-[#0088ff] bg-[#0088ff] text-white"
               : "border-[#d9d9d9] bg-white/95 text-[rgba(0,0,0,0.65)] hover:border-[#0088ff] hover:text-[#0088ff]"
           }`}
-          title={autoRotate ? "توقف چرخش خودکار" : "چرخش خودکار"}
+          title={labels.rotateTitle}
         >
           {autoRotate ? <Pause className="size-3.5" /> : <RotateCw className="size-3.5" />}
-          <span className="hidden sm:inline">چرخش</span>
+          <span className="hidden sm:inline">{labels.rotate}</span>
         </button>
         <button
           type="button"
           onClick={() => setResetKey((k) => k + 1)}
           className="inline-flex items-center gap-1 rounded-md border border-[#d9d9d9] bg-white/95 px-2 py-1.5 text-[11px] text-[rgba(0,0,0,0.65)] shadow-sm transition-colors hover:border-[#0088ff] hover:text-[#0088ff]"
-          title="بازنشانی نما"
+          title={labels.resetTitle}
         >
           <Maximize className="size-3.5" />
-          <span className="hidden sm:inline">بازنشانی</span>
+          <span className="hidden sm:inline">{labels.reset}</span>
         </button>
         <button
           type="button"
           onClick={replay}
           className="inline-flex items-center gap-1 rounded-md border border-[#d9d9d9] bg-white/95 px-2 py-1.5 text-[11px] text-[rgba(0,0,0,0.65)] shadow-sm transition-colors hover:border-[#0088ff] hover:text-[#0088ff]"
-          title="پخش دوباره انیمیشن چیدمان"
+          title={labels.replayTitle}
         >
           <Play className="size-3.5" />
-          <span className="hidden sm:inline">انیمیشن</span>
+          <span className="hidden sm:inline">{labels.replay}</span>
         </button>
       </div>
 
@@ -317,7 +476,7 @@ export default function Scene3D({ boxes, container }: Scene3DProps) {
       {!animDone && boxes.length > 0 && null}
       <div className="pointer-events-none absolute bottom-2 right-2 z-10 hidden sm:block">
         <span className="rounded bg-white/85 px-2 py-1 text-[10px] text-[rgba(0,0,0,0.45)] shadow-sm">
-          برای چرخش بکشید • برای بزرگ‌نمایی اسکرول یا با دو انگشت بکشید
+          {labels.gestureHint}
         </span>
       </div>
 
@@ -325,9 +484,9 @@ export default function Scene3D({ boxes, container }: Scene3DProps) {
         /* پیام جایگزین برای WebViewهای قدیمی بدون WebGL */
         <div className="flex h-[320px] w-full flex-col items-center justify-center gap-2 bg-[#f4faff] px-6 text-center sm:h-[430px]">
           <BoxIcon className="size-10 text-[rgba(0,0,0,0.35)]" />
-          <p className="text-sm font-medium text-[#15354e]">نمایش سه‌بعدی در این دستگاه پشتیبانی نمی‌شود</p>
+          <p className="text-sm font-medium text-[#15354e]">WebGL Not Supported</p>
           <p className="text-xs text-[rgba(0,0,0,0.55)] leading-relaxed max-w-xs">
-            برای مشاهده نمای سه‌بعدی، مرورگر یا وب‌ویو دستگاه خود را به‌روزرسانی کنید. سایر بخش‌های محاسبه بدون مشکل کار می‌کنند.
+            Please update your browser to enable 3D rendering.
           </p>
         </div>
       ) : (
@@ -384,18 +543,18 @@ export default function Scene3D({ boxes, container }: Scene3DProps) {
             const b = boxes.find((x) => x.productId === pid)!;
             const count = boxes.filter((x) => x.productId === pid).length;
             return (
-              <span key={pid} className="inline-flex items-center gap-1.5 text-[10px] text-[rgba(0,0,0,0.65)]">
+              <span key={pid} className="inline-flex items-center gap-1.5 text-[10px] text-[rgba(0,0,0,0.65)] tabular-nums">
                 <span
                   className="inline-block size-2.5 rounded-[3px] border border-black/10"
                   style={{ backgroundColor: b.color }}
                 />
-                {faNumber(count)} جعبه
+                {formatNumber(count)} {labels.boxesUnit}
               </span>
             );
           })}
           <span className="inline-flex items-center gap-1 text-[10px] text-[rgba(0,0,0,0.45)]">
             <BoxIcon className="size-3" />
-            نمای سه‌بعدی تعاملی
+            {labels.interactive3d}
           </span>
         </div>
       )}
