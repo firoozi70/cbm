@@ -246,8 +246,27 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdWebapp) }}
         />
         <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdFaq) }}
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var p = new URLSearchParams(window.location.search);
+                  var l = p.get('lang') || localStorage.getItem('cbm_lang') || (navigator.language ? navigator.language.slice(0, 2).toLowerCase() : 'fa');
+                  var rtlLangs = ['fa', 'ar'];
+                  var isRtl = rtlLangs.indexOf(l) !== -1;
+                  document.documentElement.lang = l;
+                  document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
+                  if (isRtl) {
+                    document.documentElement.classList.add('rtl');
+                    document.documentElement.classList.remove('ltr');
+                  } else {
+                    document.documentElement.classList.add('ltr');
+                    document.documentElement.classList.remove('rtl');
+                  }
+                } catch(e) {}
+              })();
+            `,
+          }}
         />
       </head>
       <body

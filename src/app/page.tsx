@@ -39,7 +39,7 @@ interface HistoryState {
 }
 
 export default function Home() {
-  const { t, formatNumber, isRtl } = useTranslation();
+  const { t, formatNumber, isRtl, locale } = useTranslation();
   const [toolMode, setToolMode] = useState<ToolMode>("load");
   const [currentStep, setCurrentStep] = useState<StepId>("products");
   const [maxReachedStep, setMaxReachedStep] = useState(0);
@@ -96,6 +96,39 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [navDir, setNavDir] = useState<"fwd" | "back">("fwd");
   const mainRef = useRef<HTMLElement>(null);
+
+  // Dynamically update default group & product labels when locale changes
+  const prevLocaleRef = useRef(locale);
+  useEffect(() => {
+    const itemPattern = /^(ردیف|عنصر|الردیف|Item|条目|Позиция|Artículo|Öğe|Artikel|Article)\s*([0-9۰-۹١-٩]+)$/i;
+    const groupPattern = /^(گروه|مجموعة|Group|分组|Группа|Grupo|Grup|Gruppe)\s*([0-9۰-۹١-٩]+)$/i;
+
+    setGroups((prevGroups) =>
+      prevGroups.map((g, i) => {
+        const isDefault = groupPattern.test(g.name.trim()) || g.id === "grp-1";
+        if (isDefault) {
+          const numStr = locale === "fa" ? formatNumber(i + 1) : String(i + 1);
+          return { ...g, name: `${t.products.group} ${numStr}` };
+        }
+        return g;
+      })
+    );
+
+    setProducts((prevProducts) =>
+      prevProducts.map((p, i) => {
+        const isDefault =
+          itemPattern.test(p.name.trim()) ||
+          ["prod-1", "prod-2", "prod-3"].includes(p.id);
+        if (isDefault) {
+          const numStr = locale === "fa" ? formatNumber(i + 1) : String(i + 1);
+          return { ...p, name: `${t.products.item} ${numStr}` };
+        }
+        return p;
+      })
+    );
+
+    prevLocaleRef.current = locale;
+  }, [locale, t, formatNumber]);
 
   // Dynamic steps based on current language
   const steps = useMemo(

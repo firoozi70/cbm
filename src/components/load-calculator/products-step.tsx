@@ -60,13 +60,14 @@ export function ProductsStep({
   setUsePallets,
   onNext,
 }: Props) {
-  const { t, formatNumber, isRtl } = useTranslation();
+  const { t, formatNumber, isRtl, locale } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const addGroup = () => {
+    const num = locale === "fa" ? formatNumber(groups.length + 1) : String(groups.length + 1);
     const newGroup: Group = {
       id: `grp-${Date.now()}`,
-      name: `${t.products.group} ${formatNumber(groups.length + 1)}`,
+      name: `${t.products.group} ${num}`,
     };
     setGroups([...groups, newGroup]);
     setProducts([
@@ -75,7 +76,7 @@ export function ProductsStep({
         id: `prod-${Date.now()}`,
         groupId: newGroup.id,
         type: "Boxes",
-        name: `${t.products.item} ${formatNumber(products.length + 1)}`,
+        name: `${t.products.item} ${num}`,
         length: "500",
         width: "400",
         height: "300",
@@ -89,11 +90,12 @@ export function ProductsStep({
   };
 
   const addProduct = (groupId: string) => {
+    const num = locale === "fa" ? formatNumber(products.length + 1) : String(products.length + 1);
     const newProd: ProductRow = {
       id: `prod-${Date.now()}`,
       groupId,
       type: "Boxes",
-      name: `${t.products.item} ${formatNumber(products.length + 1)}`,
+      name: `${t.products.item} ${num}`,
       length: "500",
       width: "400",
       height: "300",
