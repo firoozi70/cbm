@@ -58,3 +58,4 @@ server.log
 *.zip
 upload/
 download/
+photo_*.jpg
