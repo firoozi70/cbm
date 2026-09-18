@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { type ContainerSpec } from "@/lib/containers";
-import { type MultiStuffingResult } from "@/lib/load-calculation";
+import { type StuffingResult } from "@/lib/load-calculation";
 import { type ProductRow, getProductDisplayName, isDefaultItemName } from "./products-step";
 import { useTranslation } from "@/i18n/context";
 import {
@@ -17,11 +17,12 @@ import {
   Layers3,
   Weight,
   TrendingUp,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
-  result: MultiStuffingResult;
+  result: StuffingResult;
   container: ContainerSpec;
   products?: ProductRow[];
   onBack: () => void;

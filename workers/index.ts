@@ -124,14 +124,13 @@ export default {
     // Strict Security Headers
     newHeaders.set(
       "Content-Security-Policy",
-      "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'self';"
+      "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://cloudflareinsights.com; frame-ancestors 'self' https: http:;"
     );
     newHeaders.set(
       "Strict-Transport-Security",
       "max-age=31536000; includeSubDomains; preload"
     );
     newHeaders.set("X-Content-Type-Options", "nosniff");
-    newHeaders.set("X-Frame-Options", "SAMEORIGIN");
     newHeaders.set("Referrer-Policy", "strict-origin-when-cross-origin");
     newHeaders.set(
       "Permissions-Policy",
