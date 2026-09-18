@@ -1,24 +1,29 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { ContainerSpec } from "@/lib/containers";
-import { StuffingResult } from "@/lib/load-calculation";
+import { type ContainerSpec } from "@/lib/containers";
+import { type MultiStuffingResult } from "@/lib/load-calculation";
+import { type ProductRow } from "./products-step";
 import { useTranslation } from "@/i18n/context";
 import {
-  AlertTriangle,
+  Printer,
+  RotateCcw,
   CheckCircle2,
-  Download,
+  AlertTriangle,
+  Play,
+  Pause,
+  Maximize2,
   Box,
   Layers3,
   Weight,
   TrendingUp,
-  RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
-  result: StuffingResult;
+  result: MultiStuffingResult;
   container: ContainerSpec;
+  products?: ProductRow[];
   onBack: () => void;
   onRestart: () => void;
 }
@@ -36,9 +41,117 @@ const Scene3D = dynamic(() => import("./scene-3d"), {
   ),
 });
 
-export function ResultStep({ result, container, onBack, onRestart }: Props) {
-  const { t, formatNumber, isRtl } = useTranslation();
+export function ResultStep({ result, container, products, onBack, onRestart }: Props) {
+  const { t, formatNumber, isRtl, locale } = useTranslation();
   const containerName = t.containers.items[container.id]?.name || container.nameEn;
+
+  const getLocalizedWarning = (w: string) => {
+    if (w.includes("استفاده از حجم پایین است") || w.includes("volume") || w.includes("Volume")) {
+      const messages: Record<string, string> = {
+        fa: "میزان استفاده از حجم پایین است. می‌توانید با تغییر اندازه یا ترکیب محصولات، بهینه‌تر چیدمان کنید.",
+        en: "Volume utilization is low. Consider adjusting cargo dimensions or product mix to optimize loading.",
+        ar: "نسبة استغلال الحجم منخفضة. يمكنك تحسين التحميل بتعديل الأبعاد أو مزيج البضائع.",
+        zh: "容积利用率较低。建议调整货物尺寸或包装组合以优化装载。",
+        ru: "Коэффициент использования объема низкий. Отрегулируйте размеры или состав груза для оптимизации.",
+        es: "La utilización del volumen es baja. Considere ajustar las dimensiones o la mezcla de productos.",
+        tr: "Hacim kullanım oranı düşük. Yük kombinasyonunu veya boyutları ayarlayarak yüklemeyi optimize edebilirsiniz.",
+        de: "Die Volumenauslastung ist gering. Passen Sie Maße oder Ladungsmischung für eine bessere Auslastung an.",
+        fr: "Le taux d'utilisation du volume est faible. Ajustez les dimensions ou la combinaison de produits.",
+      };
+      return messages[locale] || messages.en;
+    }
+    if (w.includes("وزن بار به حد مجاز") || w.includes("weight") || w.includes("Weight")) {
+      const messages: Record<string, string> = {
+        fa: "وزن بار به حد مجاز کانتینر نزدیک است؛ از بارگیری بیش از حد خودداری کنید.",
+        en: "Cargo weight is near the container maximum payload limit; avoid overloading.",
+        ar: "وزن البضائع قريب من الحمولة القصوى للحاوية؛ تجنب زيادة الوزن.",
+        zh: "货物重量接近集装箱最大承载限制，请注意避免超载。",
+        ru: "Вес груза близок к максимальной грузоподъемности контейнера; избегайте перегруза.",
+        es: "El peso de la carga está cerca del límite máximo del contenedor; evite sobrecargas.",
+        tr: "Yük ağırlığı konteyner sınırına yakın; aşırı yüklemeden kaçının.",
+        de: "Das Ladungsgewicht liegt nahe der Nutzlastgrenze des Containers; Überladung vermeiden.",
+        fr: "Le poids du fret est proche de la charge utile maximale; évitez les surcharges.",
+      };
+      return messages[locale] || messages.en;
+    }
+    if (w.includes("هیچ محصولی") || w.includes("No cargo") || w.includes("none")) {
+      const messages: Record<string, string> = {
+        fa: "هیچ محصولی در کانتینر نمی‌گنجد. ابعاد محصولات را بررسی کنید.",
+        en: "No cargo fits within the selected container boundaries. Please check dimensions.",
+        ar: "لا توجد بضائع تتسع داخل الحاوية المحددة. يرجى التحقق من الأبعاد.",
+        zh: "所选集装箱无法容纳任何货物，请检查货物尺寸。",
+        ru: "Ни один груз не помещается в контейнер. Проверьте габариты.",
+        es: "Ninguna mercancía cabe en el contenedor seleccionado. Verifique las dimensiones.",
+        tr: "Seçilen konteynere hiçbir ürün sığmıyor. Boyutları kontrol edin.",
+        de: "Keine Ladung passt in den gewählten Container. Bitte Maße prüfen.",
+        fr: "Aucun colis ne rentre dans le conteneur sélectionné. Veuillez vérifier les dimensions.",
+      };
+      return messages[locale] || messages.en;
+    }
+    if (w.includes("کارتن باقی می‌ماند") || w.includes("باقی") || w.includes("remain")) {
+      const totalInput = result.totalInput;
+      const totalPlaced = result.totalPlaced;
+      const remaining = totalInput - totalPlaced;
+      const messages: Record<string, string> = {
+        fa: `از ${formatNumber(totalInput)} واحد واردشده، فقط ${formatNumber(totalPlaced)} واحد در کانتینر جا گرفت. ${formatNumber(remaining)} واحد باقی می‌ماند.`,
+        en: `Out of ${formatNumber(totalInput)} total items, only ${formatNumber(totalPlaced)} fit into the container. ${formatNumber(remaining)} items remain.`,
+        ar: `من أصل ${formatNumber(totalInput)} عنصر، تم تحميل ${formatNumber(totalPlaced)} فقط. تبقى ${formatNumber(remaining)} عنصر.`,
+        zh: `在输入的 ${formatNumber(totalInput)} 件货物中，仅成功装入 ${formatNumber(totalPlaced)} 件，尚余 ${formatNumber(remaining)} 件。`,
+        ru: `Из ${formatNumber(totalInput)} позиций загружено только ${formatNumber(totalPlaced)}. Осталось ${formatNumber(remaining)} шт.`,
+        es: `De ${formatNumber(totalInput)} bultos ingresados, solo se cargaron ${formatNumber(totalPlaced)}. Quedan ${formatNumber(remaining)} restantes.`,
+        tr: `Girilen ${formatNumber(totalInput)} üründen yalnızca ${formatNumber(totalPlaced)} yüklendi. ${formatNumber(remaining)} ürün kaldı.`,
+        de: `Von ${formatNumber(totalInput)} Packstücken wurden nur ${formatNumber(totalPlaced)} geladen. ${formatNumber(remaining)} verbleiben.`,
+        fr: `Sur ${formatNumber(totalInput)} colis saisis, seulement ${formatNumber(totalPlaced)} ont été chargés. ${formatNumber(remaining)} restent.`,
+      };
+      return messages[locale] || messages.en;
+    }
+    return w;
+  };
+
+  const getLocalizedOrientation = (label: string) => {
+    if (!label || label === "—") return "—";
+    const parts = label.split("×").map((s) => s.trim());
+    if (parts.length !== 3) return label;
+
+    const termMap: Record<string, Record<string, string>> = {
+      طول: {
+        fa: "طول",
+        en: "Length",
+        ar: "الطول",
+        zh: "长",
+        ru: "Длина",
+        tr: "Uzunluk",
+        es: "Largo",
+        de: "Länge",
+        fr: "Longueur",
+      },
+      عرض: {
+        fa: "عرض",
+        en: "Width",
+        ar: "العرض",
+        zh: "宽",
+        ru: "Ширина",
+        tr: "Genişlik",
+        es: "Ancho",
+        de: "Breite",
+        fr: "Largeur",
+      },
+      ارتفاع: {
+        fa: "ارتفاع",
+        en: "Height",
+        ar: "الارتفاع",
+        zh: "高",
+        ru: "Высота",
+        tr: "Yükseklik",
+        es: "Alto",
+        de: "Höhe",
+        fr: "Hauteur",
+      },
+    };
+
+    const locParts = parts.map((part) => termMap[part]?.[locale] || termMap[part]?.en || part);
+    return locParts.join(" × ");
+  };
 
   return (
     <div className="bg-white border border-[#e8e8e8] rounded-sm shadow-xs">
@@ -170,37 +283,42 @@ export function ResultStep({ result, container, onBack, onRestart }: Props) {
 
           {/* Mobile Cards */}
           <div className="md:hidden divide-y divide-[#f0f0f0]">
-            {result.placements.map((p) => (
-              <div key={p.productId} className="p-3 space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span
-                      className="size-4 rounded-sm border border-[#d9d9d9] shrink-0"
-                      style={{ backgroundColor: p.color }}
-                    />
-                    <span className="text-xs font-semibold text-[#15354e] truncate">{p.name}</span>
-                  </div>
-                  <span className="text-[10px] font-bold text-[#52c41a] bg-[#f6ffed] border border-[#b7eb8f] rounded-full px-2 py-0.5 shrink-0 tabular-nums">
-                    {t.result.qtyPlaced}: {formatNumber(p.placed)}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-[11px]">
-                  <div className="flex justify-between bg-[#fafafa] rounded-sm px-2 py-1">
-                    <span className="text-[rgba(0,0,0,0.45)]">Dimensions:</span>
-                    <span className="tabular-nums font-medium text-[#15354e]">
-                      {formatNumber(p.effLength, 0)}×{formatNumber(p.effWidth, 0)}×
-                      {formatNumber(p.effHeight, 0)}
+            {result.placements.map((p) => {
+              const displayName = products?.find((x) => x.id === p.productId)?.name || p.name;
+              const dimLabel = locale === "fa" ? "ابعاد" : locale === "ar" ? "الأبعاد" : locale === "zh" ? "尺寸" : locale === "ru" ? "Размеры" : locale === "tr" ? "Boyutlar" : locale === "es" ? "Dimensiones" : locale === "de" ? "Maße" : locale === "fr" ? "Dimensions" : "Dimensions";
+              const layoutLabel = locale === "fa" ? "چیدمان" : locale === "ar" ? "التوزيع" : locale === "zh" ? "排列" : locale === "ru" ? "Раскладка" : locale === "tr" ? "Düzen" : locale === "es" ? "Disposición" : locale === "de" ? "Anordnung" : locale === "fr" ? "Disposition" : "Layout";
+
+              return (
+                <div key={p.productId} className="p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className="size-4 rounded-sm border border-[#d9d9d9] shrink-0"
+                        style={{ backgroundColor: p.color }}
+                      />
+                      <span className="text-xs font-semibold text-[#15354e] truncate">{displayName}</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-[#52c41a] bg-[#f6ffed] border border-[#b7eb8f] rounded-full px-2 py-0.5 shrink-0 tabular-nums">
+                      {t.result.qtyPlaced}: {formatNumber(p.placed)}
                     </span>
                   </div>
-                  <div className="flex justify-between bg-[#fafafa] rounded-sm px-2 py-1">
-                    <span className="text-[rgba(0,0,0,0.45)]">Layout:</span>
-                    <span className="tabular-nums font-medium text-[#15354e]">
-                      {formatNumber(p.layoutL)}×{formatNumber(p.layoutW)}×{formatNumber(p.layoutH)}
-                    </span>
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="flex justify-between bg-[#fafafa] rounded-sm px-2 py-1">
+                      <span className="text-[rgba(0,0,0,0.45)]">{dimLabel}:</span>
+                      <span className="tabular-nums font-medium text-[#15354e]">
+                        {formatNumber(p.effLength, 0)}×{formatNumber(p.effWidth, 0)}×{formatNumber(p.effHeight, 0)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between bg-[#fafafa] rounded-sm px-2 py-1">
+                      <span className="text-[rgba(0,0,0,0.45)]">{layoutLabel}:</span>
+                      <span className="tabular-nums font-medium text-[#15354e]">
+                        {formatNumber(p.layoutL)}×{formatNumber(p.layoutW)}×{formatNumber(p.layoutH)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Desktop Table */}
@@ -230,7 +348,7 @@ export function ResultStep({ result, container, onBack, onRestart }: Props) {
                       isRtl ? "text-right" : "text-left"
                     )}
                   >
-                    Dimensions (cm)
+                    {locale === "fa" ? "ابعاد (سانتی‌متر)" : locale === "ar" ? "الأبعاد (سم)" : locale === "zh" ? "尺寸 (cm)" : locale === "ru" ? "Размеры (см)" : locale === "tr" ? "Boyutlar (cm)" : locale === "es" ? "Dimensiones (cm)" : locale === "de" ? "Maße (cm)" : locale === "fr" ? "Dimensions (cm)" : "Dimensions (cm)"}
                   </th>
                   <th
                     className={cn(
@@ -238,7 +356,7 @@ export function ResultStep({ result, container, onBack, onRestart }: Props) {
                       isRtl ? "text-right" : "text-left"
                     )}
                   >
-                    Layout (L×W×H)
+                    {locale === "fa" ? "چیدمان (ط×ع×ا)" : locale === "ar" ? "التوزيع (ط×ع×ا)" : locale === "zh" ? "排列 (长×宽×高)" : locale === "ru" ? "Раскладка (Д×Ш×В)" : locale === "tr" ? "Düzen (U×G×Y)" : locale === "es" ? "Disposición (L×A×A)" : locale === "de" ? "Anordnung (L×B×H)" : locale === "fr" ? "Disposition (L×L×H)" : "Layout (L×W×H)"}
                   </th>
                   <th
                     className={cn(
@@ -254,7 +372,7 @@ export function ResultStep({ result, container, onBack, onRestart }: Props) {
                       isRtl ? "text-right" : "text-left"
                     )}
                   >
-                    Remaining
+                    {locale === "fa" ? "باقیمانده" : locale === "ar" ? "المتبقي" : locale === "zh" ? "剩余" : locale === "ru" ? "Остаток" : locale === "tr" ? "Kalan" : locale === "es" ? "Restante" : locale === "de" ? "Verbleibend" : locale === "fr" ? "Restant" : "Remaining"}
                   </th>
                   <th
                     className={cn(
@@ -262,39 +380,42 @@ export function ResultStep({ result, container, onBack, onRestart }: Props) {
                       isRtl ? "text-right" : "text-left"
                     )}
                   >
-                    Orientation
+                    {locale === "fa" ? "جهت" : locale === "ar" ? "الاتجاه" : locale === "zh" ? "摆放方向" : locale === "ru" ? "Ориентация" : locale === "tr" ? "Yönlendirme" : locale === "es" ? "Orientación" : locale === "de" ? "Ausrichtung" : locale === "fr" ? "Orientation" : "Orientation"}
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#f0f0f0]">
-                {result.placements.map((p) => (
-                  <tr key={p.productId} className="hover:bg-[#fafafa]">
-                    <td className="p-2.5">
-                      <div
-                        className="size-4 rounded-sm border border-[#d9d9d9]"
-                        style={{ backgroundColor: p.color }}
-                      />
-                    </td>
-                    <td className="p-2.5 text-[#15354e] font-medium">{p.name}</td>
-                    <td className="p-2.5 tabular-nums">
-                      {formatNumber(p.effLength, 1)} × {formatNumber(p.effWidth, 1)} ×{" "}
-                      {formatNumber(p.effHeight, 1)}
-                    </td>
-                    <td className="p-2.5 tabular-nums">
-                      {formatNumber(p.layoutL)} × {formatNumber(p.layoutW)} ×{" "}
-                      {formatNumber(p.layoutH)}
-                    </td>
-                    <td className="p-2.5 tabular-nums text-[#52c41a] font-bold">
-                      {formatNumber(p.placed)}
-                    </td>
-                    <td className="p-2.5 tabular-nums text-[#ff4d4f] font-medium">
-                      {formatNumber(p.remaining)}
-                    </td>
-                    <td className="p-2.5 text-[rgba(0,0,0,0.65)] text-[10px]">
-                      {p.orientationLabel}
-                    </td>
-                  </tr>
-                ))}
+                {result.placements.map((p) => {
+                  const displayName = products?.find((x) => x.id === p.productId)?.name || p.name;
+                  return (
+                    <tr key={p.productId} className="hover:bg-[#fafafa]">
+                      <td className="p-2.5">
+                        <div
+                          className="size-4 rounded-sm border border-[#d9d9d9]"
+                          style={{ backgroundColor: p.color }}
+                        />
+                      </td>
+                      <td className="p-2.5 text-[#15354e] font-medium">{displayName}</td>
+                      <td className="p-2.5 tabular-nums">
+                        {formatNumber(p.effLength, 1)} × {formatNumber(p.effWidth, 1)} ×{" "}
+                        {formatNumber(p.effHeight, 1)}
+                      </td>
+                      <td className="p-2.5 tabular-nums">
+                        {formatNumber(p.layoutL)} × {formatNumber(p.layoutW)} ×{" "}
+                        {formatNumber(p.layoutH)}
+                      </td>
+                      <td className="p-2.5 tabular-nums text-[#52c41a] font-bold">
+                        {formatNumber(p.placed)}
+                      </td>
+                      <td className="p-2.5 tabular-nums text-[#ff4d4f] font-medium">
+                        {formatNumber(p.remaining)}
+                      </td>
+                      <td className="p-2.5 text-[rgba(0,0,0,0.65)] text-[10px]">
+                        {getLocalizedOrientation(p.orientationLabel)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -305,13 +426,15 @@ export function ResultStep({ result, container, onBack, onRestart }: Props) {
           <div className="border border-[#ffe58f] bg-[#fffbe6] rounded-md p-3">
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle className="size-4 text-[#faad14]" />
-              <h4 className="text-xs font-semibold text-[#d48806]">Warnings & Alerts</h4>
+              <h4 className="text-xs font-semibold text-[#d48806]">
+                {locale === "fa" ? "هشدارها و نکات چیدمان" : locale === "ar" ? "تنبيهات وملاحظات" : locale === "zh" ? "装载警告与提示" : locale === "ru" ? "Предупреждения и рекомендации" : locale === "tr" ? "Uyarılar ve İpuçları" : locale === "de" ? "Warnungen & Hinweise" : locale === "fr" ? "Avertissements & Conseils" : locale === "es" ? "Alertas y Advertencias" : "Warnings & Alerts"}
+              </h4>
             </div>
             <ul className="space-y-1.5">
               {result.warnings.map((w, i) => (
                 <li key={i} className="text-xs text-[#ad6800] flex items-start gap-1.5">
                   <span className="text-[#faad14] mt-0.5">•</span>
-                  <span className="leading-relaxed">{w}</span>
+                  <span className="leading-relaxed">{getLocalizedWarning(w)}</span>
                 </li>
               ))}
             </ul>

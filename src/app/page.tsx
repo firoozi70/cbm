@@ -512,6 +512,7 @@ export default function Home() {
                 <ResultStep
                   result={stuffingResult}
                   container={container}
+                  products={products}
                   onBack={back}
                   onRestart={restart}
                 />

@@ -130,40 +130,36 @@ html[lang="ar"] {
   direction: rtl;
 }
 
-/* Explicit font-family and digit rules */
-html[dir="ltr"] body,
-html.ltr body,
-html[dir="ltr"] input,
-html.ltr input,
-html[dir="ltr"] select,
-html.ltr select,
-html[dir="ltr"] textarea,
-html.ltr textarea,
-html[dir="ltr"] button,
-html.ltr button {
-  font-family: var(--font-montserrat), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
-  font-feature-settings: "locl" 0, "ss01" 0;
+/* For ALL non-Persian languages (en, zh, ru, es, tr, de, fr, ar): strictly disable Persian digits and use Montserrat/system fonts */
+html:not([lang="fa"]),
+html:not([lang="fa"]) body,
+html:not([lang="fa"]) * {
+  font-feature-settings: "locl" 0, "ss01" 0, "numr" 0 !important;
+  -webkit-font-feature-settings: "locl" 0, "ss01" 0, "numr" 0 !important;
 }
 
+html:not([lang="fa"]) body {
+  font-family: var(--font-montserrat), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif !important;
+}
+
+html:not([lang="fa"]) input,
+html:not([lang="fa"]) select,
+html:not([lang="fa"]) textarea,
+html:not([lang="fa"]) button,
+html:not([lang="fa"]) .tabular-nums,
+html:not([lang="fa"]) input[type="number"],
+html:not([lang="fa"]) table {
+  font-family: var(--font-montserrat), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-variant-numeric: tabular-nums lining-nums !important;
+}
+
+/* Persian typography with Vazirmatn */
 html[lang="fa"] body,
 html[lang="fa"] input,
 html[lang="fa"] select,
 html[lang="fa"] textarea,
 html[lang="fa"] button {
   font-family: var(--font-vazirmatn), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
-}
-
-/* ALL non-Persian languages (en, zh, ru, es, tr, de, fr, ar) MUST use Latin numerals for all inputs and tabular figures */
-html:not([lang="fa"]) input,
-html:not([lang="fa"]) select,
-html:not([lang="fa"]) textarea,
-html:not([lang="fa"]) .tabular-nums,
-html:not([lang="fa"]) input[type="number"],
-html:not([lang="fa"]) table {
-  font-family: var(--font-montserrat), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-  font-variant-numeric: tabular-nums lining-nums !important;
-  -webkit-font-feature-settings: "locl" 0, "ss01" 0, "numr" 0 !important;
-  font-feature-settings: "locl" 0, "ss01" 0, "numr" 0 !important;
 }
 
 @layer base {
