@@ -28,10 +28,23 @@ export function getDictionary(locale: Locale): TranslationDictionary {
 }
 
 export function formatLocaleNumber(value: number, locale: Locale, decimals = 0): string {
+  // Only Persian (fa) uses Eastern Persian numerals (۰-۹)
+  // All other languages (including Arabic in international logistics) use standard Western Latin numerals (0-9)
+  if (locale === "fa") {
+    try {
+      return new Intl.NumberFormat("fa-IR", {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      }).format(value);
+    } catch {
+      return value.toFixed(decimals);
+    }
+  }
+
   const intlLocaleMap: Record<Locale, string> = {
     fa: "fa-IR",
     en: "en-US",
-    ar: "ar-EG",
+    ar: "ar-u-nu-latn",
     zh: "zh-CN",
     ru: "ru-RU",
     es: "es-ES",

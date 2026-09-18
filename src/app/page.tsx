@@ -44,7 +44,7 @@ export default function Home() {
   const [currentStep, setCurrentStep] = useState<StepId>("products");
   const [maxReachedStep, setMaxReachedStep] = useState(0);
   const [groups, setGroups] = useState<Group[]>([
-    { id: "grp-1", name: `${t.products.group} 1` },
+    { id: "grp-1", name: `${t.products.group} 1`, isCustomName: false },
   ]);
   const [products, setProducts] = useState<ProductRow[]>([
     {
@@ -52,6 +52,7 @@ export default function Home() {
       groupId: "grp-1",
       type: "Boxes",
       name: `${t.products.item} 1`,
+      isCustomName: false,
       length: "500",
       width: "400",
       height: "300",
@@ -66,6 +67,7 @@ export default function Home() {
       groupId: "grp-1",
       type: "Sacks",
       name: `${t.products.item} 2`,
+      isCustomName: false,
       length: "1000",
       width: "450",
       height: "300",
@@ -80,6 +82,7 @@ export default function Home() {
       groupId: "grp-1",
       type: "Big bags",
       name: `${t.products.item} 3`,
+      isCustomName: false,
       length: "1000",
       width: "1000",
       height: "1000",
@@ -97,18 +100,40 @@ export default function Home() {
   const [navDir, setNavDir] = useState<"fwd" | "back">("fwd");
   const mainRef = useRef<HTMLElement>(null);
 
-  // Dynamically update default group & product labels when locale changes
-  const prevLocaleRef = useRef(locale);
-  useEffect(() => {
-    const itemPattern = /^(ردیف|عنصر|الردیف|Item|条目|Позиция|Artículo|Öğe|Artikel|Article)\s*([0-9۰-۹١-٩]+)$/i;
-    const groupPattern = /^(گروه|مجموعة|Group|分组|Группа|Grupo|Grup|Gruppe)\s*([0-9۰-۹١-٩]+)$/i;
+  // All known default item and group keywords across all 9 supported languages:
+  // fa: ردیف / گروه | en: Item / Group | ar: البند / المجموعة | zh: 项 / 组
+  // ru: Позиция / Группа | es: Ítem / Grupo | tr: Kalem / Grup | de: Position / Gruppe | fr: Ligne / Groupe
+  const ALL_ITEM_WORDS = useMemo(
+    () => [
+      "ردیف", "item", "البند", "项", "позиция", "ítem", "kalem", "position",
+      "ligne", "artikel", "article", "öğe", "عنصر", "الردیف", "条目"
+    ],
+    []
+  );
 
+  const ALL_GROUP_WORDS = useMemo(
+    () => [
+      "گروه", "group", "المجموعة", "مجموعة", "组", "分组", "группа",
+      "grupo", "grup", "gruppe", "groupe"
+    ],
+    []
+  );
+
+  // Dynamically update default group & product labels when locale changes
+  useEffect(() => {
     setGroups((prevGroups) =>
       prevGroups.map((g, i) => {
-        const isDefault = groupPattern.test(g.name.trim()) || g.id === "grp-1";
+        const lowerName = g.name.trim().toLowerCase();
+        const startsWithDefaultWord = ALL_GROUP_WORDS.some((w) => lowerName.startsWith(w));
+        const isDefault =
+          g.isCustomName === false ||
+          g.isCustomName === undefined ||
+          g.id === "grp-1" ||
+          startsWithDefaultWord;
+
         if (isDefault) {
           const numStr = locale === "fa" ? formatNumber(i + 1) : String(i + 1);
-          return { ...g, name: `${t.products.group} ${numStr}` };
+          return { ...g, name: `${t.products.group} ${numStr}`, isCustomName: false };
         }
         return g;
       })
@@ -116,19 +141,22 @@ export default function Home() {
 
     setProducts((prevProducts) =>
       prevProducts.map((p, i) => {
+        const lowerName = p.name.trim().toLowerCase();
+        const startsWithDefaultWord = ALL_ITEM_WORDS.some((w) => lowerName.startsWith(w));
         const isDefault =
-          itemPattern.test(p.name.trim()) ||
-          ["prod-1", "prod-2", "prod-3"].includes(p.id);
+          p.isCustomName === false ||
+          p.isCustomName === undefined ||
+          ["prod-1", "prod-2", "prod-3"].includes(p.id) ||
+          startsWithDefaultWord;
+
         if (isDefault) {
           const numStr = locale === "fa" ? formatNumber(i + 1) : String(i + 1);
-          return { ...p, name: `${t.products.item} ${numStr}` };
+          return { ...p, name: `${t.products.item} ${numStr}`, isCustomName: false };
         }
         return p;
       })
     );
-
-    prevLocaleRef.current = locale;
-  }, [locale, t, formatNumber]);
+  }, [locale, t, formatNumber, ALL_ITEM_WORDS, ALL_GROUP_WORDS]);
 
   // Dynamic steps based on current language
   const steps = useMemo(

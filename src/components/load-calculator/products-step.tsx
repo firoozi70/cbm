@@ -12,6 +12,7 @@ export interface ProductRow {
   groupId: string;
   type: string;
   name: string;
+  isCustomName?: boolean;
   length: string; // mm
   width: string;
   height: string;
@@ -25,6 +26,7 @@ export interface ProductRow {
 export interface Group {
   id: string;
   name: string;
+  isCustomName?: boolean;
 }
 
 interface Props {
@@ -64,10 +66,12 @@ export function ProductsStep({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const addGroup = () => {
-    const num = locale === "fa" ? formatNumber(groups.length + 1) : String(groups.length + 1);
+    const numG = locale === "fa" ? formatNumber(groups.length + 1) : String(groups.length + 1);
+    const numP = locale === "fa" ? formatNumber(products.length + 1) : String(products.length + 1);
     const newGroup: Group = {
       id: `grp-${Date.now()}`,
-      name: `${t.products.group} ${num}`,
+      name: `${t.products.group} ${numG}`,
+      isCustomName: false,
     };
     setGroups([...groups, newGroup]);
     setProducts([
@@ -76,7 +80,8 @@ export function ProductsStep({
         id: `prod-${Date.now()}`,
         groupId: newGroup.id,
         type: "Boxes",
-        name: `${t.products.item} ${num}`,
+        name: `${t.products.item} ${numP}`,
+        isCustomName: false,
         length: "500",
         width: "400",
         height: "300",
@@ -96,6 +101,7 @@ export function ProductsStep({
       groupId,
       type: "Boxes",
       name: `${t.products.item} ${num}`,
+      isCustomName: false,
       length: "500",
       width: "400",
       height: "300",
@@ -109,7 +115,20 @@ export function ProductsStep({
   };
 
   const updateProduct = (id: string, field: keyof ProductRow, value: string | boolean) => {
-    setProducts(products.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
+    setProducts(
+      products.map((p) => {
+        if (p.id !== id) return p;
+        if (field === "name") {
+          const strVal = String(value);
+          return {
+            ...p,
+            name: strVal,
+            isCustomName: strVal.trim().length > 0,
+          };
+        }
+        return { ...p, [field]: value };
+      })
+    );
   };
 
   const duplicateProduct = (id: string) => {
@@ -117,7 +136,7 @@ export function ProductsStep({
     if (!prod) return;
     setProducts([
       ...products,
-      { ...prod, id: `prod-${Date.now()}`, name: `${prod.name} (Copy)` },
+      { ...prod, id: `prod-${Date.now()}`, name: `${prod.name} (Copy)`, isCustomName: true },
     ]);
   };
 
@@ -131,7 +150,13 @@ export function ProductsStep({
   };
 
   const renameGroup = (groupId: string, name: string) => {
-    setGroups(groups.map((g) => (g.id === groupId ? { ...g, name } : g)));
+    setGroups(
+      groups.map((g) =>
+        g.id === groupId
+          ? { ...g, name, isCustomName: name.trim().length > 0 }
+          : g
+      )
+    );
   };
 
   const hasProducts = products.length > 0;
