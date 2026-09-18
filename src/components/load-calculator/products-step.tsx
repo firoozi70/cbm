@@ -29,6 +29,56 @@ export interface Group {
   isCustomName?: boolean;
 }
 
+export const ALL_ITEM_WORDS = [
+  "ردیف", "item", "البند", "项", "позиция", "ítem", "kalem", "position",
+  "ligne", "artikel", "article", "öğe", "عنصر", "الردیف", "条目"
+];
+
+export const ALL_GROUP_WORDS = [
+  "گروه", "group", "المجموعة", "مجموعة", "组", "分组", "группа",
+  "grupo", "grup", "gruppe", "groupe"
+];
+
+export function isDefaultItemName(name?: string): boolean {
+  if (!name || !name.trim()) return true;
+  const lower = name.trim().toLowerCase();
+  return ALL_ITEM_WORDS.some((w) => lower.startsWith(w));
+}
+
+export function isDefaultGroupName(name?: string): boolean {
+  if (!name || !name.trim()) return true;
+  const lower = name.trim().toLowerCase();
+  return ALL_GROUP_WORDS.some((w) => lower.startsWith(w));
+}
+
+export function getProductDisplayName(
+  p: { name?: string; isCustomName?: boolean },
+  index: number,
+  t: { products: { item: string } },
+  locale: string,
+  formatNumber: (n: number) => string
+): string {
+  if (p.isCustomName && p.name && !isDefaultItemName(p.name)) {
+    return p.name;
+  }
+  const numStr = locale === "fa" ? formatNumber(index + 1) : String(index + 1);
+  return `${t.products.item} ${numStr}`;
+}
+
+export function getGroupDisplayName(
+  g: { name?: string; isCustomName?: boolean },
+  index: number,
+  t: { products: { group: string } },
+  locale: string,
+  formatNumber: (n: number) => string
+): string {
+  if (g.isCustomName && g.name && !isDefaultGroupName(g.name)) {
+    return g.name;
+  }
+  const numStr = locale === "fa" ? formatNumber(index + 1) : String(index + 1);
+  return `${t.products.group} ${numStr}`;
+}
+
 interface Props {
   groups: Group[];
   products: ProductRow[];
@@ -66,11 +116,9 @@ export function ProductsStep({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const addGroup = () => {
-    const numG = locale === "fa" ? formatNumber(groups.length + 1) : String(groups.length + 1);
-    const numP = locale === "fa" ? formatNumber(products.length + 1) : String(products.length + 1);
     const newGroup: Group = {
       id: `grp-${Date.now()}`,
-      name: `${t.products.group} ${numG}`,
+      name: "",
       isCustomName: false,
     };
     setGroups([...groups, newGroup]);
@@ -80,7 +128,7 @@ export function ProductsStep({
         id: `prod-${Date.now()}`,
         groupId: newGroup.id,
         type: "Boxes",
-        name: `${t.products.item} ${numP}`,
+        name: "",
         isCustomName: false,
         length: "500",
         width: "400",
@@ -95,12 +143,11 @@ export function ProductsStep({
   };
 
   const addProduct = (groupId: string) => {
-    const num = locale === "fa" ? formatNumber(products.length + 1) : String(products.length + 1);
     const newProd: ProductRow = {
       id: `prod-${Date.now()}`,
       groupId,
       type: "Boxes",
-      name: `${t.products.item} ${num}`,
+      name: "",
       isCustomName: false,
       length: "500",
       width: "400",
@@ -114,16 +161,25 @@ export function ProductsStep({
     setProducts([...products, newProd]);
   };
 
-  const updateProduct = (id: string, field: keyof ProductRow, value: string | boolean) => {
+  const updateProduct = (
+    id: string,
+    field: keyof ProductRow,
+    value: string | boolean,
+    isCustomNameParam?: boolean
+  ) => {
     setProducts(
       products.map((p) => {
         if (p.id !== id) return p;
         if (field === "name") {
           const strVal = String(value);
+          const isCustom =
+            isCustomNameParam !== undefined
+              ? isCustomNameParam
+              : strVal.trim().length > 0 && !isDefaultItemName(strVal);
           return {
             ...p,
             name: strVal,
-            isCustomName: strVal.trim().length > 0,
+            isCustomName: isCustom,
           };
         }
         return { ...p, [field]: value };
@@ -136,7 +192,7 @@ export function ProductsStep({
     if (!prod) return;
     setProducts([
       ...products,
-      { ...prod, id: `prod-${Date.now()}`, name: `${prod.name} (Copy)`, isCustomName: true },
+      { ...prod, id: `prod-${Date.now()}`, name: `${prod.name || t.products.item} (Copy)`, isCustomName: true },
     ]);
   };
 
@@ -149,11 +205,15 @@ export function ProductsStep({
     setProducts(products.filter((p) => p.groupId !== groupId));
   };
 
-  const renameGroup = (groupId: string, name: string) => {
+  const renameGroup = (groupId: string, name: string, isCustom = true) => {
     setGroups(
       groups.map((g) =>
         g.id === groupId
-          ? { ...g, name, isCustomName: name.trim().length > 0 }
+          ? {
+              ...g,
+              name,
+              isCustomName: isCustom && name.trim().length > 0 && !isDefaultGroupName(name),
+            }
           : g
       )
     );
@@ -208,10 +268,15 @@ export function ProductsStep({
         const stamp = Date.now();
         const idMap = new Map<string, string>();
         const importedGroups: Group[] = data.groups.map(
-          (g: { id?: string; name?: string }, i: number) => {
+          (g: { id?: string; name?: string; isCustomName?: boolean }, i: number) => {
             const id = `grp-${stamp}-${i}`;
             idMap.set(String(g.id), id);
-            return { id, name: String(g.name ?? `${t.products.group} ${i + 1}`) };
+            const rawName = String(g.name ?? "");
+            const isCustom =
+              g.isCustomName !== undefined
+                ? Boolean(g.isCustomName)
+                : rawName.trim().length > 0 && !isDefaultGroupName(rawName);
+            return { id, name: rawName, isCustomName: isCustom };
           }
         );
         const importedProducts: ProductRow[] = data.products.map(
@@ -221,11 +286,17 @@ export function ProductsStep({
               const n = parseFloat(String(v));
               return Number.isFinite(n) && n >= 0 ? String(n) : def;
             };
+            const rawName = String(p.name ?? "").slice(0, 60);
+            const isCustom =
+              p.isCustomName !== undefined
+                ? Boolean(p.isCustomName)
+                : rawName.trim().length > 0 && !isDefaultItemName(rawName);
             return {
               id: `prod-${stamp}-${i}`,
               groupId: idMap.get(String(p.groupId)) ?? importedGroups[0].id,
               type,
-              name: String(p.name ?? `${t.products.item} ${i + 1}`).slice(0, 60),
+              name: rawName,
+              isCustomName: isCustom,
               length: num(p.length, "500"),
               width: num(p.width, "400"),
               height: num(p.height, "300"),
@@ -307,8 +378,11 @@ export function ProductsStep({
       </div>
 
       {/* Cargo Groups */}
-      {groups.map((group) => {
+      {groups.map((group, groupIdx) => {
         const groupProducts = products.filter((p) => p.groupId === group.id);
+        const defaultGroupName = getGroupDisplayName({ isCustomName: false }, groupIdx, t, locale, formatNumber);
+        const displayGroupName = getGroupDisplayName(group, groupIdx, t, locale, formatNumber);
+
         return (
           <div key={group.id} className="border-b border-[#e8e8e8] last:border-0">
             {/* Group Header */}
@@ -317,8 +391,13 @@ export function ProductsStep({
                 <Lock className="size-4 text-[#0088ff]" />
                 <input
                   type="text"
-                  value={group.name}
-                  onChange={(e) => renameGroup(group.id, e.target.value)}
+                  value={displayGroupName}
+                  placeholder={defaultGroupName}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const isCustom = val.trim().length > 0 && !isDefaultGroupName(val);
+                    renameGroup(group.id, val, isCustom);
+                  }}
                   className="bg-transparent border-0 text-sm font-semibold text-[#15354e] focus:outline-none focus:ring-1 focus:ring-[#0088ff] rounded px-1"
                 />
               </div>
@@ -355,43 +434,53 @@ export function ProductsStep({
                   {t.products.fillRequired}
                 </div>
               )}
-              {groupProducts.map((p) => (
-                <div
-                  key={p.id}
-                  className="grid grid-cols-2 lg:grid-cols-[130px_1fr_90px_90px_90px_90px_80px_50px_50px_45px] gap-2 p-2.5 items-center bg-white hover:bg-[#fafafa] transition-colors"
-                >
-                  {/* Type */}
-                  <div className="relative col-span-2 lg:col-span-1">
-                    <select
-                      value={p.type}
-                      onChange={(e) => updateProduct(p.id, "type", e.target.value)}
-                      className={cn(
-                        "w-full h-8 text-xs border border-[#d9d9d9] rounded-sm hover:border-[#0088ff] focus:border-[#0088ff] focus:outline-none bg-white appearance-none",
-                        isRtl ? "pr-2 pl-7" : "pl-2 pr-7"
-                      )}
-                    >
-                      {PRODUCT_TYPES.map((pt) => (
-                        <option key={pt.en} value={pt.en}>
-                          {t.products.productTypes[pt.en] || pt.en}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown
-                      className={cn(
-                        "absolute top-1/2 -translate-y-1/2 size-3.5 text-[rgba(0,0,0,0.45)] pointer-events-none",
-                        isRtl ? "left-2" : "right-2"
-                      )}
-                    />
-                  </div>
+              {groupProducts.map((p, pIdx) => {
+                const globalIndex = products.findIndex((x) => x.id === p.id);
+                const displayIdx = globalIndex >= 0 ? globalIndex : pIdx;
+                const defaultProdName = getProductDisplayName({ isCustomName: false }, displayIdx, t, locale, formatNumber);
+                const displayProdName = getProductDisplayName(p, displayIdx, t, locale, formatNumber);
 
-                  {/* Name */}
-                  <input
-                    type="text"
-                    value={p.name}
-                    onChange={(e) => updateProduct(p.id, "name", e.target.value)}
-                    placeholder={t.products.name}
-                    className="col-span-2 lg:col-span-1 h-8 px-2 text-xs border border-[#d9d9d9] rounded-sm hover:border-[#0088ff] focus:border-[#0088ff] focus:outline-none"
-                  />
+                return (
+                  <div
+                    key={p.id}
+                    className="grid grid-cols-2 lg:grid-cols-[130px_1fr_90px_90px_90px_90px_80px_50px_50px_45px] gap-2 p-2.5 items-center bg-white hover:bg-[#fafafa] transition-colors"
+                  >
+                    {/* Type */}
+                    <div className="relative col-span-2 lg:col-span-1">
+                      <select
+                        value={p.type}
+                        onChange={(e) => updateProduct(p.id, "type", e.target.value)}
+                        className={cn(
+                          "w-full h-8 text-xs border border-[#d9d9d9] rounded-sm hover:border-[#0088ff] focus:border-[#0088ff] focus:outline-none bg-white appearance-none",
+                          isRtl ? "pr-2 pl-7" : "pl-2 pr-7"
+                        )}
+                      >
+                        {PRODUCT_TYPES.map((pt) => (
+                          <option key={pt.en} value={pt.en}>
+                            {t.products.productTypes[pt.en] || pt.en}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        className={cn(
+                          "absolute top-1/2 -translate-y-1/2 size-3.5 text-[rgba(0,0,0,0.45)] pointer-events-none",
+                          isRtl ? "left-2" : "right-2"
+                        )}
+                      />
+                    </div>
+
+                    {/* Name */}
+                    <input
+                      type="text"
+                      value={displayProdName}
+                      placeholder={defaultProdName}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const isCustom = val.trim().length > 0 && !isDefaultItemName(val);
+                        updateProduct(p.id, "name", val, isCustom);
+                      }}
+                      className="col-span-2 lg:col-span-1 h-8 px-2 text-xs border border-[#d9d9d9] rounded-sm hover:border-[#0088ff] focus:border-[#0088ff] focus:outline-none"
+                    />
 
                   {/* Length */}
                   <div>
@@ -515,7 +604,8 @@ export function ProductsStep({
                     </button>
                   </div>
                 </div>
-              ))}
+              );
+            })}
             </div>
 
             {/* Add Product Line */}

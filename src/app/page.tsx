@@ -2,7 +2,15 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { WizardStepper, type StepId } from "@/components/load-calculator/wizard-stepper";
-import { ProductsStep, type ProductRow, type Group } from "@/components/load-calculator/products-step";
+import {
+  ProductsStep,
+  type ProductRow,
+  type Group,
+  getProductDisplayName,
+  getGroupDisplayName,
+  isDefaultGroupName,
+  isDefaultItemName,
+} from "@/components/load-calculator/products-step";
 import { ContainersStep, getSelectedContainer } from "@/components/load-calculator/containers-step";
 import { ResultStep } from "@/components/load-calculator/result-step";
 import { CbmCalculator } from "@/components/load-calculator/cbm-calculator";
@@ -21,6 +29,7 @@ import {
   HelpCircle,
   Award,
   Table as TableIcon,
+  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -44,14 +53,14 @@ export default function Home() {
   const [currentStep, setCurrentStep] = useState<StepId>("products");
   const [maxReachedStep, setMaxReachedStep] = useState(0);
   const [groups, setGroups] = useState<Group[]>([
-    { id: "grp-1", name: `${t.products.group} 1`, isCustomName: false },
+    { id: "grp-1", name: "", isCustomName: false },
   ]);
   const [products, setProducts] = useState<ProductRow[]>([
     {
       id: "prod-1",
       groupId: "grp-1",
       type: "Boxes",
-      name: `${t.products.item} 1`,
+      name: "",
       isCustomName: false,
       length: "500",
       width: "400",
@@ -66,7 +75,7 @@ export default function Home() {
       id: "prod-2",
       groupId: "grp-1",
       type: "Sacks",
-      name: `${t.products.item} 2`,
+      name: "",
       isCustomName: false,
       length: "1000",
       width: "450",
@@ -81,7 +90,7 @@ export default function Home() {
       id: "prod-3",
       groupId: "grp-1",
       type: "Big bags",
-      name: `${t.products.item} 3`,
+      name: "",
       isCustomName: false,
       length: "1000",
       width: "1000",
@@ -100,63 +109,26 @@ export default function Home() {
   const [navDir, setNavDir] = useState<"fwd" | "back">("fwd");
   const mainRef = useRef<HTMLElement>(null);
 
-  // All known default item and group keywords across all 9 supported languages:
-  // fa: ردیف / گروه | en: Item / Group | ar: البند / المجموعة | zh: 项 / 组
-  // ru: Позиция / Группа | es: Ítem / Grupo | tr: Kalem / Grup | de: Position / Gruppe | fr: Ligne / Groupe
-  const ALL_ITEM_WORDS = useMemo(
-    () => [
-      "ردیف", "item", "البند", "项", "позиция", "ítem", "kalem", "position",
-      "ligne", "artikel", "article", "öğe", "عنصر", "الردیف", "条目"
-    ],
-    []
-  );
-
-  const ALL_GROUP_WORDS = useMemo(
-    () => [
-      "گروه", "group", "المجموعة", "مجموعة", "组", "分组", "группа",
-      "grupo", "grup", "gruppe", "groupe"
-    ],
-    []
-  );
-
-  // Dynamically update default group & product labels when locale changes
+  // Dynamically ensure default group & product labels clear out stale locale names on locale changes
   useEffect(() => {
     setGroups((prevGroups) =>
-      prevGroups.map((g, i) => {
-        const lowerName = g.name.trim().toLowerCase();
-        const startsWithDefaultWord = ALL_GROUP_WORDS.some((w) => lowerName.startsWith(w));
-        const isDefault =
-          g.isCustomName === false ||
-          g.isCustomName === undefined ||
-          g.id === "grp-1" ||
-          startsWithDefaultWord;
-
-        if (isDefault) {
-          const numStr = locale === "fa" ? formatNumber(i + 1) : String(i + 1);
-          return { ...g, name: `${t.products.group} ${numStr}`, isCustomName: false };
+      prevGroups.map((g) => {
+        if (!g.isCustomName || isDefaultGroupName(g.name)) {
+          return { ...g, name: "", isCustomName: false };
         }
         return g;
       })
     );
 
     setProducts((prevProducts) =>
-      prevProducts.map((p, i) => {
-        const lowerName = p.name.trim().toLowerCase();
-        const startsWithDefaultWord = ALL_ITEM_WORDS.some((w) => lowerName.startsWith(w));
-        const isDefault =
-          p.isCustomName === false ||
-          p.isCustomName === undefined ||
-          ["prod-1", "prod-2", "prod-3"].includes(p.id) ||
-          startsWithDefaultWord;
-
-        if (isDefault) {
-          const numStr = locale === "fa" ? formatNumber(i + 1) : String(i + 1);
-          return { ...p, name: `${t.products.item} ${numStr}`, isCustomName: false };
+      prevProducts.map((p) => {
+        if (!p.isCustomName || isDefaultItemName(p.name)) {
+          return { ...p, name: "", isCustomName: false };
         }
         return p;
       })
     );
-  }, [locale, t, formatNumber, ALL_ITEM_WORDS, ALL_GROUP_WORDS]);
+  }, [locale]);
 
   // Dynamic steps based on current language
   const steps = useMemo(
@@ -259,9 +231,9 @@ export default function Home() {
   // Stuffing calculation
   const stuffingResult = useMemo(() => {
     if (currentStep !== "result") return null;
-    const multiProducts: MultiProductInput[] = products.map((p) => ({
+    const multiProducts: MultiProductInput[] = products.map((p, i) => ({
       id: p.id,
-      name: p.name,
+      name: getProductDisplayName(p, i, t, locale, formatNumber),
       color: p.color,
       lengthMm: parseFloat(p.length) || 0,
       widthMm: parseFloat(p.width) || 0,
@@ -273,7 +245,7 @@ export default function Home() {
     }));
     const cont = getSelectedContainer(selectedContainerId);
     return calculateMultiStuffing(multiProducts, cont);
-  }, [currentStep, products, selectedContainerId]);
+  }, [currentStep, products, selectedContainerId, t, locale, formatNumber]);
 
   const container = getSelectedContainer(selectedContainerId);
 
@@ -338,6 +310,14 @@ export default function Home() {
               >
                 {t.nav.parentSite}
               </a>
+              <a
+                href="mailto:info@zandesh.com"
+                className="text-xs font-medium text-[rgba(0,0,0,0.55)] hover:text-[#0088ff] border-s border-[#e8e8e8] ps-3 transition-colors flex items-center gap-1.5"
+                title="info@zandesh.com"
+              >
+                <Mail className="size-3.5 text-[#0088ff]" />
+                <span>info@zandesh.com</span>
+              </a>
               <LanguageSelector />
             </nav>
 
@@ -397,6 +377,13 @@ export default function Home() {
               >
                 {t.nav.parentSite} ↗
               </a>
+              <a
+                href="mailto:info@zandesh.com"
+                className="text-start text-sm text-[#15354e] font-medium py-2.5 px-2 rounded-md active:bg-black/5 transition-colors border-t border-[#f0f0f0] flex items-center gap-2"
+              >
+                <Mail className="size-4 text-[#0088ff]" />
+                <span>info@zandesh.com</span>
+              </a>
             </nav>
           )}
         </div>
@@ -408,7 +395,7 @@ export default function Home() {
           <div className="flex flex-wrap items-center gap-2 mb-1.5">
             <h1 className="text-base sm:text-2xl font-bold text-[#15354e]">{t.hero.title}</h1>
             <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-[#f6ffed] text-[#52c41a] border border-[#b7eb8f]">
-              100% Free
+              {locale === "fa" ? "۱۰۰٪ رایگان" : "100% Free"}
             </span>
           </div>
           <p className="hidden sm:block text-xs sm:text-sm text-[rgba(0,0,0,0.65)] max-w-3xl leading-relaxed">
@@ -665,7 +652,7 @@ export default function Home() {
           <p className="text-white/60 text-[11px] max-w-2xl mx-auto leading-relaxed">
             {t.footer.disclaimer}
           </p>
-          <div className="mt-3 flex items-center justify-center gap-3 text-white/50 text-[11px]">
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-white/60 text-[11px]">
             <span>© {new Date().getFullYear()} Zandesh Logistics Group.</span>
             <span>•</span>
             <a
@@ -675,6 +662,14 @@ export default function Home() {
               className="text-[#40a9ff] hover:underline"
             >
               zandesh.com
+            </a>
+            <span>•</span>
+            <a
+              href="mailto:info@zandesh.com"
+              className="text-[#40a9ff] hover:underline inline-flex items-center gap-1"
+            >
+              <Mail className="size-3 inline" />
+              info@zandesh.com
             </a>
             <span>•</span>
             <span>{t.footer.rights}</span>
@@ -747,6 +742,16 @@ export default function Home() {
               <span className="block text-[rgba(0,0,0,0.7)]">{t.cbm.subtitle}</span>
             </DialogDescription>
           </DialogHeader>
+          <div className="mt-3 pt-3 border-t border-[#e8e8e8] flex items-center justify-between text-xs text-[rgba(0,0,0,0.65)]">
+            <span>{locale === "fa" ? "ارتباط و پشتیبانی:" : "Contact & Support:"}</span>
+            <a
+              href="mailto:info@zandesh.com"
+              className="text-[#0088ff] hover:underline font-medium inline-flex items-center gap-1.5"
+            >
+              <Mail className="size-3.5 text-[#0088ff]" />
+              info@zandesh.com
+            </a>
+          </div>
         </DialogContent>
       </Dialog>
 

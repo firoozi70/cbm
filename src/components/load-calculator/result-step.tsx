@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { type ContainerSpec } from "@/lib/containers";
 import { type MultiStuffingResult } from "@/lib/load-calculation";
-import { type ProductRow } from "./products-step";
+import { type ProductRow, getProductDisplayName, isDefaultItemName } from "./products-step";
 import { useTranslation } from "@/i18n/context";
 import {
   Printer,
@@ -284,7 +284,13 @@ export function ResultStep({ result, container, products, onBack, onRestart }: P
           {/* Mobile Cards */}
           <div className="md:hidden divide-y divide-[#f0f0f0]">
             {result.placements.map((p) => {
-              const displayName = products?.find((x) => x.id === p.productId)?.name || p.name;
+              const prod = products?.find((x) => x.id === p.productId);
+              const prodIdx = products?.findIndex((x) => x.id === p.productId) ?? -1;
+              const displayName = prod
+                ? getProductDisplayName(prod, prodIdx >= 0 ? prodIdx : 0, t, locale, formatNumber)
+                : (!isDefaultItemName(p.name)
+                    ? p.name
+                    : `${t.products.item} ${locale === "fa" ? formatNumber(1) : "1"}`);
               const dimLabel = locale === "fa" ? "ابعاد" : locale === "ar" ? "الأبعاد" : locale === "zh" ? "尺寸" : locale === "ru" ? "Размеры" : locale === "tr" ? "Boyutlar" : locale === "es" ? "Dimensiones" : locale === "de" ? "Maße" : locale === "fr" ? "Dimensions" : "Dimensions";
               const layoutLabel = locale === "fa" ? "چیدمان" : locale === "ar" ? "التوزيع" : locale === "zh" ? "排列" : locale === "ru" ? "Раскладка" : locale === "tr" ? "Düzen" : locale === "es" ? "Disposición" : locale === "de" ? "Anordnung" : locale === "fr" ? "Disposition" : "Layout";
 
@@ -386,7 +392,13 @@ export function ResultStep({ result, container, products, onBack, onRestart }: P
               </thead>
               <tbody className="divide-y divide-[#f0f0f0]">
                 {result.placements.map((p) => {
-                  const displayName = products?.find((x) => x.id === p.productId)?.name || p.name;
+                  const prod = products?.find((x) => x.id === p.productId);
+                  const prodIdx = products?.findIndex((x) => x.id === p.productId) ?? -1;
+                  const displayName = prod
+                    ? getProductDisplayName(prod, prodIdx >= 0 ? prodIdx : 0, t, locale, formatNumber)
+                    : (!isDefaultItemName(p.name)
+                        ? p.name
+                        : `${t.products.item} ${locale === "fa" ? formatNumber(1) : "1"}`);
                   return (
                     <tr key={p.productId} className="hover:bg-[#fafafa]">
                       <td className="p-2.5">
