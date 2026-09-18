@@ -1,0 +1,20 @@
+name = "cbm-load-calculator"
+main = "workers/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./out"
+binding = "ASSETS"
+
+# Geographic and Security edge configuration
+[vars]
+ENVIRONMENT = "production"
+DEFAULT_LOCALE = "fa"
+FALLBACK_LOCALE = "en"
+SITE_DOMAIN = "cbm.zandesh.com"
+
+# Custom Domain Route on Cloudflare (when zone is active in Cloudflare)
+# routes = [
+#   { pattern = "cbm.zandesh.com/*", zone_name = "zandesh.com" }
+# ]

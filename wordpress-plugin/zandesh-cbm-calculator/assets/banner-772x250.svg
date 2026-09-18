@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 772 250" width="772" height="250">
+  <defs>
+    <linearGradient id="bannerBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+  </defs>
+  <rect width="772" height="250" fill="url(#bannerBg)"/>
+  <g opacity="0.1">
+    <circle cx="100" cy="50" r="120" fill="#ffffff" />
+    <circle cx="700" cy="200" r="150" fill="#38bdf8" />
+  </g>
+  <g transform="translate(60, 55)">
+    <rect width="64" height="64" rx="14" fill="#0088ff" />
+    <g transform="translate(12, 12) scale(1.66)" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M12 10.189V14" />
+      <path d="M12 2v3" />
+      <path d="M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6" />
+      <path d="M19.38 20A11.6 11.6 0 0 0 21 14l-8.188-3.639a2 2 0 0 0-1.624 0L3 14a11.6 11.6 0 0 0 2.81 7.76" />
+    </g>
+    <text x="85" y="38" font-family="system-ui, sans-serif" font-size="28" font-weight="800" fill="#ffffff" letter-spacing="0.5">Zandesh CBM</text>
+    <text x="85" y="62" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#38bdf8">3D Container Stuffing &amp; Cargo Volume Calculator</text>
+    <text x="85" y="105" font-family="system-ui, sans-serif" font-size="13" fill="#cbd5e1">✓ 100% Free &amp; Unlimited  ✓ Elementor Dedicated Widget  ✓ 9 Languages (RTL/LTR)</text>
+    <text x="85" y="130" font-family="system-ui, sans-serif" font-size="13" fill="#cbd5e1">✓ 20ft, 40ft, 40ft HC &amp; Trucks  ✓ Export Proforma Invoice Generator</text>
+    <rect x="85" y="148" width="180" height="26" rx="6" fill="#0088ff" />
+    <text x="175" y="165" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#ffffff">Powered by Zandesh.com</text>
+  </g>
+</svg>

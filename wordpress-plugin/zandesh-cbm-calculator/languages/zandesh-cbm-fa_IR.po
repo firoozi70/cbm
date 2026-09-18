@@ -1,0 +1,84 @@
+# Persian translation for Zandesh CBM
+# Copyright (C) 2026 Zandesh Logistics Group
+msgid ""
+msgstr ""
+"Project-Id-Version: Zandesh CBM 1.0.0\n"
+"Report-Msgid-Bugs-To: https://zandesh.com/contact\n"
+"POT-Creation-Date: 2026-09-18 14:30:00+00:00\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: fa_IR\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: zandesh-cbm-calculator.php:80
+msgid "Settings"
+msgstr "تنظیمات"
+
+#: includes/class-admin-settings.php:24
+msgid "Zandesh CBM Settings"
+msgstr "تنظیمات ماشین‌حساب بار زَندِش"
+
+#: includes/class-admin-settings.php:25
+msgid "Zandesh CBM"
+msgstr "زندش CBM"
+
+#: includes/class-admin-settings.php:98
+msgid "Zandesh CBM & 3D Container Loading Settings"
+msgstr "تنظیمات سامانه چیدمان سه‌بعدی و CBM زندش"
+
+#: includes/class-admin-settings.php:99
+msgid "Configure appearance, default language, proforma details, and logistics options."
+msgstr "پیکربندی ظاهر، زبان پیش‌فرض، مشخصات پیش‌فاکتور و گزینه‌های لجستیک."
+
+#: includes/class-admin-settings.php:111
+msgid "General & Language Settings"
+msgstr "تنظیمات عمومی و زبان"
+
+#: includes/class-admin-settings.php:116
+msgid "Default Language"
+msgstr "زبان پیش‌فرض"
+
+#: includes/class-admin-settings.php:134
+msgid "Brand Accent Color"
+msgstr "رنگ سازمانی و شاخص برند"
+
+#: includes/class-admin-settings.php:143
+msgid "Free Badge"
+msgstr "نشان ۱۰۰٪ رایگان"
+
+#: includes/class-admin-settings.php:154
+msgid "Proforma Invoice"
+msgstr "پیش‌فاکتور رسمی حمل"
+
+#: includes/class-admin-settings.php:168
+msgid "Logistics & Company Details (Proforma Header)"
+msgstr "مشخصات شرکت صادرکننده پیش‌فاکتور"
+
+#: includes/class-admin-settings.php:173
+msgid "Company Name"
+msgstr "نام شرکت"
+
+#: includes/class-admin-settings.php:180
+msgid "WhatsApp / Phone"
+msgstr "شماره واتساپ / تماس"
+
+#: includes/class-admin-settings.php:187
+msgid "Company Logo"
+msgstr "لوگوی شرکت"
+
+#: includes/class-admin-settings.php:198
+msgid "Default Currency"
+msgstr "ارز پیش‌فرض"
+
+#: includes/class-admin-settings.php:205
+msgid "USD Exchange Rate"
+msgstr "نرخ تبدیل دلار"
+
+#: includes/class-admin-settings.php:215
+msgid "Save Changes"
+msgstr "ذخیره تغییرات"
+
+#: includes/class-elementor-widget.php:20
+msgid "Zandesh CBM & 3D Container"
+msgstr "ماشین‌حساب بار و کانتینر ۳بعدی زندش"

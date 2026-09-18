@@ -1,7 +1,7 @@
 "use client";
 
-import { Check } from "lucide-react";
-import { faNumber } from "@/lib/containers";
+import { Check, ChevronRight, ChevronLeft } from "lucide-react";
+import { useTranslation } from "@/i18n/context";
 import { cn } from "@/lib/utils";
 
 export type StepId = "products" | "containers" | "result";
@@ -10,7 +10,7 @@ interface Step {
   id: StepId;
   index: number;
   title: string;
-  titleEn: string;
+  subtitle?: string;
   icon: React.ReactNode;
 }
 
@@ -18,23 +18,24 @@ interface Props {
   steps: Step[];
   currentStep: StepId;
   onStepClick?: (step: StepId) => void;
-  maxReachedStep: number; // بالاترین استپی که کاربر رسیده
+  maxReachedStep: number;
 }
 
 export function WizardStepper({ steps, currentStep, onStepClick, maxReachedStep }: Props) {
+  const { formatNumber, isRtl } = useTranslation();
   const currentIndex = steps.findIndex((s) => s.id === currentStep);
 
   return (
     <div className="w-full bg-white border-b border-[#e8e8e8]">
       <div className="max-w-[1200px] mx-auto px-2 sm:px-4">
         <div className="flex items-stretch justify-between relative">
-          {/* خط زیر */}
+          {/* Background line */}
           <div className="absolute top-1/2 right-0 left-0 h-px bg-[#e8e8e8] -translate-y-1/2 hidden sm:block" />
 
           {steps.map((step, idx) => {
             const isActive = idx === currentIndex;
             const isCompleted = idx < currentIndex || idx < maxReachedStep;
-            const isClickable = idx <= maxReachedStep && onStepClick;
+            const isClickable = idx <= maxReachedStep && !!onStepClick;
 
             return (
               <div key={step.id} className="flex-1 relative">
@@ -54,7 +55,7 @@ export function WizardStepper({ steps, currentStep, onStepClick, maxReachedStep 
                 >
                   <div
                     className={cn(
-                      "flex size-8 items-center justify-center rounded-full border-2 transition-all shrink-0",
+                      "flex size-8 items-center justify-center rounded-full border-2 transition-all shrink-0 font-bold",
                       isActive
                         ? "bg-[#0088ff] border-[#0088ff] text-white"
                         : isCompleted
@@ -65,42 +66,43 @@ export function WizardStepper({ steps, currentStep, onStepClick, maxReachedStep 
                     {isCompleted ? (
                       <Check className="size-4" />
                     ) : (
-                      <span className="text-xs font-semibold">{faNumber(step.index)}</span>
+                      <span className="text-xs font-semibold">{formatNumber(step.index)}</span>
                     )}
                   </div>
 
                   <div className="flex flex-col items-center sm:items-start gap-0.5">
                     <span
                       className={cn(
-                        "text-xs sm:text-sm font-medium transition-colors leading-tight",
+                        "text-xs sm:text-sm font-medium transition-colors leading-tight text-center sm:text-start",
                         isActive
-                          ? "text-[#0088ff]"
+                          ? "text-[#0088ff] font-semibold"
                           : isCompleted
                           ? "text-[#52c41a]"
-                          : "text-[rgba(0,0,0,0.45)]"
+                          : "text-[rgba(0,0,0,0.65)]"
                       )}
                     >
                       {step.title}
                     </span>
-                    <span className="hidden sm:block text-[10px] uppercase tracking-wide text-[rgba(0,0,0,0.35)]">
-                      {step.titleEn}
-                    </span>
+                    {step.subtitle && (
+                      <span className="hidden sm:block text-[10px] text-[rgba(0,0,0,0.35)]">
+                        {step.subtitle}
+                      </span>
+                    )}
                   </div>
 
-                  {/* خطوط رابط بین استپ‌ها */}
+                  {/* Step divider chevron */}
                   {idx < steps.length - 1 && (
-                    <div className="hidden sm:block absolute left-0 top-1/2 -translate-y-1/2 -ml-3 z-10">
-                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                        <path
-                          d="M 5 5 L 12 10 L 5 15"
-                          stroke={isCompleted ? "#52c41a" : "#d9d9d9"}
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          fill="none"
-                          transform="scale(-1,1) translate(-20,0)"
-                        />
-                      </svg>
+                    <div
+                      className={cn(
+                        "hidden sm:block absolute top-1/2 -translate-y-1/2 z-10 text-[rgba(0,0,0,0.25)]",
+                        isRtl ? "left-0 -ml-2" : "right-0 -mr-2"
+                      )}
+                    >
+                      {isRtl ? (
+                        <ChevronLeft className="size-4 text-[#d9d9d9]" />
+                      ) : (
+                        <ChevronRight className="size-4 text-[#d9d9d9]" />
+                      )}
                     </div>
                   )}
                 </button>

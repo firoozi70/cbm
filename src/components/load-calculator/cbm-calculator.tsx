@@ -14,7 +14,7 @@ import {
   type FreightMode,
   type CbmLengthUnit,
 } from "@/lib/cbm";
-import { faNumber } from "@/lib/containers";
+import { useTranslation } from "@/i18n/context";
 import { ProformaDialog, ProformaPrint, type ProformaData } from "./proforma";
 import {
   Plus,
@@ -43,7 +43,6 @@ const MODE_ICONS = {
 } as const;
 
 const UNIT_FACTOR: Record<CbmLengthUnit, number> = { mm: 1, cm: 10 };
-const UNIT_LABEL: Record<CbmLengthUnit, string> = { mm: "میلی‌متر", cm: "سانتی‌متر" };
 
 let idCounter = 0;
 function newRow(type: PackageType = "pallet"): PackageRow {
@@ -53,7 +52,6 @@ function newRow(type: PackageType = "pallet"): PackageRow {
     id: `pkg-${Date.now()}-${idCounter}`,
     type,
     palletType: type === "pallet" ? "eur" : "eur",
-    // پیش‌فرض‌ها بر اساس نوع بسته
     length: type === "pallet" ? String(pt?.length ?? 1200) : type === "roll" ? "600" : "500",
     width: type === "pallet" ? String(pt?.width ?? 800) : type === "roll" ? "0" : "400",
     height: type === "pallet" ? "1000" : type === "roll" ? "0" : "300",
@@ -64,14 +62,19 @@ function newRow(type: PackageType = "pallet"): PackageRow {
 }
 
 export function CbmCalculator() {
-  // پیش‌فرض: یک ردیف پالت انتخاب شده
+  const { t, formatNumber, isRtl } = useTranslation();
   const [rows, setRows] = useState<PackageRow[]>([newRow("pallet")]);
   const [mode, setMode] = useState<FreightMode>("sea");
   const [unit, setUnit] = useState<CbmLengthUnit>("mm");
   const [proformaOpen, setProformaOpen] = useState(false);
   const [proformaData, setProformaData] = useState<ProformaData | null>(null);
 
-  // تبدیل مقادیر ورودی (واحد انتخابی) به میلی‌متر برای محاسبه
+  const unitLabels: Record<CbmLengthUnit, string> = {
+    mm: t.cbm.unitMm,
+    cm: t.cbm.unitCm,
+  };
+
+  // Convert input values to mm for core calculation
   const rowsMm = useMemo<PackageRow[]>(
     () =>
       rows.map((r) => ({
@@ -88,11 +91,8 @@ export function CbmCalculator() {
   const totals = useMemo(() => calcCbmTotals(rowsMm, mode), [rowsMm, mode]);
   const selectedMode = FREIGHT_MODES.find((m) => m.value === mode)!;
 
-  // تبدیل مقدار میلی‌متر به واحد فعلی برای نمایش/پیش‌فرض‌ها
-  const mmToUnit = (mm: number) =>
-    String(Math.round((mm / UNIT_FACTOR[unit]) * 100) / 100);
+  const mmToUnit = (mm: number) => String(Math.round((mm / UNIT_FACTOR[unit]) * 100) / 100);
 
-  // تغییر واحد: مقادیر وارد‌شده تبدیل شوند تا فیزیکی ثابت بمانند
   const changeUnit = (u: CbmLengthUnit) => {
     if (u === unit) return;
     const from = UNIT_FACTOR[unit];
@@ -118,26 +118,30 @@ export function CbmCalculator() {
       prev.map((r) => {
         if (r.id !== id) return r;
         const next = { ...r, [field]: value };
-        // با تغییر نوع بسته، فیلدهای نامربوط صفر شوند
         if (field === "type") {
-          const t = value as PackageType;
-          const info = getPackageType(t);
+          const tp = value as PackageType;
+          const info = getPackageType(tp);
           if (info.shape === "round") {
             next.width = "0";
             next.height = info.roundSecond === "length" ? "0" : next.height;
             next.length = info.roundSecond === "length" ? next.length : "0";
-            if (t === "drum" && (parseFloat(next.diameter) || 0) === 0) next.diameter = mmToUnit(600);
-            if (t === "cylinder" && (parseFloat(next.diameter) || 0) === 0) next.diameter = mmToUnit(400);
-            if (t === "roll" && (parseFloat(next.diameter) || 0) === 0) next.diameter = mmToUnit(400);
-            if (info.roundSecond === "height" && (parseFloat(next.height) || 0) === 0) next.height = mmToUnit(900);
-            if (info.roundSecond === "length" && (parseFloat(next.length) || 0) === 0) next.length = mmToUnit(1200);
+            if (tp === "drum" && (parseFloat(next.diameter) || 0) === 0)
+              next.diameter = mmToUnit(600);
+            if (tp === "cylinder" && (parseFloat(next.diameter) || 0) === 0)
+              next.diameter = mmToUnit(400);
+            if (tp === "roll" && (parseFloat(next.diameter) || 0) === 0)
+              next.diameter = mmToUnit(400);
+            if (info.roundSecond === "height" && (parseFloat(next.height) || 0) === 0)
+              next.height = mmToUnit(900);
+            if (info.roundSecond === "length" && (parseFloat(next.length) || 0) === 0)
+              next.length = mmToUnit(1200);
           } else {
             next.diameter = "0";
             if ((parseFloat(next.length) || 0) === 0) next.length = mmToUnit(500);
             if ((parseFloat(next.width) || 0) === 0) next.width = mmToUnit(400);
             if ((parseFloat(next.height) || 0) === 0) next.height = mmToUnit(300);
           }
-          if (t === "pallet") {
+          if (tp === "pallet") {
             next.palletType = "eur";
             const pt = getPalletType("eur");
             next.length = mmToUnit(pt.length);
@@ -145,7 +149,6 @@ export function CbmCalculator() {
             if ((parseFloat(next.height) || 0) === 0) next.height = mmToUnit(1000);
           }
         }
-        // با تغییر نوع پالت، ابعاد به‌روزرسانی شوند
         if (field === "palletType" && next.type === "pallet") {
           const pt = getPalletType(value);
           if (pt.value !== "custom") {
@@ -167,7 +170,6 @@ export function CbmCalculator() {
   const removeRow = (id: string) => setRows((prev) => prev.filter((r) => r.id !== id));
 
   const applyPresetDims = (id: string, dims: { length: number; width: number }) => {
-    // dims بر حسب میلی‌متر است؛ به واحد فعلی تبدیل شود
     setRows((prev) =>
       prev.map((r) =>
         r.id === id
@@ -181,11 +183,11 @@ export function CbmCalculator() {
 
   return (
     <div className="space-y-4">
-      {/* واحد اندازه‌گیری */}
-      <div className="flex flex-wrap items-center justify-between gap-2 bg-white border border-[#e8e8e8] rounded-sm p-3">
+      {/* Dimension Unit Selector */}
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-white border border-[#e8e8e8] rounded-sm p-3 shadow-xs">
         <div className="flex items-center gap-2">
           <FileSpreadsheet className="size-4 text-[#0088ff]" />
-          <span className="text-sm font-semibold text-[#15354e]">واحد اندازه‌گیری</span>
+          <span className="text-sm font-semibold text-[#15354e]">{t.cbm.title}</span>
         </div>
         <div className="flex rounded-md border border-[#d9d9d9] overflow-hidden">
           {(["mm", "cm"] as CbmLengthUnit[]).map((u) => (
@@ -194,59 +196,78 @@ export function CbmCalculator() {
               type="button"
               onClick={() => changeUnit(u)}
               className={cn(
-                "px-4 py-1.5 text-xs transition-colors",
+                "px-4 py-1.5 text-xs font-medium transition-colors cursor-pointer",
                 unit === u
                   ? "bg-[#0088ff] text-white"
                   : "bg-white text-[rgba(0,0,0,0.65)] hover:text-[#0088ff]"
               )}
             >
-              {UNIT_LABEL[u]} ({u.toUpperCase()})
+              {unitLabels[u]} ({u.toUpperCase()})
             </button>
           ))}
         </div>
       </div>
 
-      {/* شیوه حمل */}
-      <div className="bg-white border border-[#e8e8e8] rounded-sm">
+      {/* Transport / Freight Modes */}
+      <div className="bg-white border border-[#e8e8e8] rounded-sm shadow-xs">
         <div className="p-3 border-b border-[#e8e8e8] bg-[#fafafa]">
-          <h3 className="text-sm font-semibold text-[#15354e]">شیوه حمل و نقل</h3>
+          <h3 className="text-sm font-semibold text-[#15354e]">{t.cbm.compareModes}</h3>
           <p className="hidden sm:block text-xs text-[rgba(0,0,0,0.65)] mt-1">
-            وزن حجمی بر اساس ضریب استاندارد هر شیوه حمل محاسبه می‌شود.
+            {t.cbm.subtitle}
           </p>
         </div>
-        <div className="p-3 grid grid-cols-2 md:grid-cols-4 gap-2 stagger">
+        <div className="p-3 grid grid-cols-2 md:grid-cols-4 gap-2.5">
           {FREIGHT_MODES.map((m) => {
             const Icon = MODE_ICONS[m.icon];
             const active = mode === m.value;
-            const t = totals.byMode[m.value];
+            const tByMode = totals.byMode[m.value];
+            const modeMeta = t.cbm.modes[m.value] || { title: m.en, hint: m.hint };
+
             return (
               <button
                 key={m.value}
                 type="button"
                 onClick={() => setMode(m.value)}
                 className={cn(
-                  "text-right rounded-md border-2 p-3 transition-all",
+                  "rounded-md border-2 p-3 transition-all text-start cursor-pointer",
                   active
-                    ? "border-[#0088ff] bg-[#e6f7ff]"
+                    ? "border-[#0088ff] bg-[#e6f7ff]/70 shadow-xs"
                     : "border-[#e8e8e8] bg-white hover:border-[#0088ff]"
                 )}
               >
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-1.5">
-                    <Icon className={cn("size-4", active ? "text-[#0088ff]" : "text-[rgba(0,0,0,0.45)]")} />
-                    <span className={cn("text-xs font-bold", active ? "text-[#0088ff]" : "text-[#15354e]")}>
-                      {m.fa}
+                    <Icon
+                      className={cn(
+                        "size-4",
+                        active ? "text-[#0088ff]" : "text-[rgba(0,0,0,0.45)]"
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        "text-xs font-bold truncate",
+                        active ? "text-[#0088ff]" : "text-[#15354e]"
+                      )}
+                    >
+                      {modeMeta.title.split("(")[0]}
                     </span>
                   </div>
-                  <span className="text-[9px] uppercase text-[rgba(0,0,0,0.45)]">{m.en.split(" ")[0]}</span>
+                  <span className="text-[9px] uppercase text-[rgba(0,0,0,0.45)]">
+                    {m.en.split(" ")[0]}
+                  </span>
                 </div>
                 <div className="text-[10px] text-[rgba(0,0,0,0.65)] tabular-nums">
-                  ۱ م³ = {faNumber(m.factor)} کیلوگرم
+                  1 m³ = {formatNumber(m.factor)} kg
                 </div>
                 <div className="text-[10px] mt-1 pt-1 border-t border-[#f0f0f0] text-[rgba(0,0,0,0.65)]">
-                  قابل احتساب:{" "}
-                  <span className={cn("font-semibold tabular-nums", active ? "text-[#0088ff]" : "text-[#15354e]")}>
-                    {hasValid ? `${faNumber(Math.round(t.chargeable))} کیلوگرم` : "—"}
+                  {t.cbm.chargeableWeight}:{" "}
+                  <span
+                    className={cn(
+                      "font-semibold tabular-nums",
+                      active ? "text-[#0088ff]" : "text-[#15354e]"
+                    )}
+                  >
+                    {hasValid ? `${formatNumber(Math.round(tByMode.chargeable))} kg` : "—"}
                   </span>
                 </div>
               </button>
@@ -255,14 +276,11 @@ export function CbmCalculator() {
         </div>
       </div>
 
-      {/* بسته‌ها */}
-      <div className="bg-white border border-[#e8e8e8] rounded-sm">
+      {/* Package Rows */}
+      <div className="bg-white border border-[#e8e8e8] rounded-sm shadow-xs">
         <div className="flex items-center justify-between p-3 border-b border-[#e8e8e8] bg-[#fafafa]">
           <div>
-            <h3 className="text-sm font-semibold text-[#15354e]">اقلام بار</h3>
-            <p className="hidden sm:block text-xs text-[rgba(0,0,0,0.65)] mt-1">
-              نوع بسته، ابعاد، وزن و تعداد را وارد کنید. حجم هر بسته (CBM) خودکار محاسبه می‌شود.
-            </p>
+            <h3 className="text-sm font-semibold text-[#15354e]">{t.cbm.addPackage}</h3>
           </div>
         </div>
 
@@ -272,33 +290,39 @@ export function CbmCalculator() {
             const res = results[idx];
             const isRound = info.shape === "round";
             const isPallet = row.type === "pallet";
-            const palletInfo = getPalletType(row.palletType);
             return (
               <div key={row.id} className="p-3">
-                {/* سربرگ ردیف: شماره، نوع بسته، حذف/کپی */}
+                {/* Row Header */}
                 <div className="flex flex-wrap items-center gap-2 mb-2.5">
                   <span className="flex size-6 items-center justify-center rounded-full bg-[#0088ff] text-[11px] font-bold text-white shrink-0">
-                    {faNumber(idx + 1)}
+                    {formatNumber(idx + 1)}
                   </span>
 
-                  {/* نوع بسته */}
+                  {/* Package Type Dropdown */}
                   <div className="relative flex-1 min-w-[130px]">
                     <select
                       value={row.type}
                       onChange={(e) => updateRow(row.id, "type", e.target.value)}
-                      className="w-full h-8 px-2 pl-7 text-xs border border-[#d9d9d9] rounded-sm hover:border-[#0088ff] focus:border-[#0088ff] focus:outline-none bg-white appearance-none"
-                      aria-label="نوع بسته"
+                      className={cn(
+                        "w-full h-8 text-xs border border-[#d9d9d9] rounded-sm hover:border-[#0088ff] focus:border-[#0088ff] focus:outline-none bg-white appearance-none",
+                        isRtl ? "pr-2 pl-7" : "pl-2 pr-7"
+                      )}
                     >
-                      {PACKAGE_TYPES.map((t) => (
-                        <option key={t.value} value={t.value}>
-                          {t.fa} ({t.en})
+                      {PACKAGE_TYPES.map((pt) => (
+                        <option key={pt.value} value={pt.value}>
+                          {t.cbm.types[pt.value] || pt.en}
                         </option>
                       ))}
                     </select>
-                    <ChevronDown className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-[rgba(0,0,0,0.45)] pointer-events-none" />
+                    <ChevronDown
+                      className={cn(
+                        "absolute top-1/2 -translate-y-1/2 size-3.5 text-[rgba(0,0,0,0.45)] pointer-events-none",
+                        isRtl ? "left-2" : "right-2"
+                      )}
+                    />
                   </div>
 
-                  {/* نوع پالت */}
+                  {/* Pallet Type Dropdown */}
                   {isPallet && (
                     <div className="relative flex-1 min-w-[150px]">
                       <select
@@ -308,29 +332,32 @@ export function CbmCalculator() {
                           const pt = getPalletType(e.target.value);
                           if (pt.value !== "custom") applyPresetDims(row.id, pt);
                         }}
-                        className="w-full h-8 px-2 pl-7 text-xs border border-[#d9d9d9] rounded-sm hover:border-[#0088ff] focus:border-[#0088ff] focus:outline-none bg-white appearance-none"
-                        aria-label="استاندارد پالت"
+                        className={cn(
+                          "w-full h-8 text-xs border border-[#d9d9d9] rounded-sm hover:border-[#0088ff] focus:border-[#0088ff] focus:outline-none bg-white appearance-none",
+                          isRtl ? "pr-2 pl-7" : "pl-2 pr-7"
+                        )}
                       >
                         {PALLET_TYPES.map((p) => (
                           <option key={p.value} value={p.value}>
-                            پالت {p.fa}
-                            {p.value !== "custom"
-                              ? ` - ${faNumber(p.length / UNIT_FACTOR[unit])}×${faNumber(p.width / UNIT_FACTOR[unit])}`
-                              : ""}
+                            {t.cbm.pallets[p.value] || p.en}
                           </option>
                         ))}
                       </select>
-                      <ChevronDown className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-[rgba(0,0,0,0.45)] pointer-events-none" />
+                      <ChevronDown
+                        className={cn(
+                          "absolute top-1/2 -translate-y-1/2 size-3.5 text-[rgba(0,0,0,0.45)] pointer-events-none",
+                          isRtl ? "left-2" : "right-2"
+                        )}
+                      />
                     </div>
                   )}
 
-                  <div className="flex items-center gap-0.5 mr-auto">
+                  <div className="flex items-center gap-1 ms-auto">
                     <button
                       type="button"
                       onClick={() => duplicateRow(row.id)}
-                      className="touch-target inline-flex items-center justify-center text-[rgba(0,0,0,0.45)] hover:text-[#0088ff] p-1.5 rounded transition-colors"
-                      title="کپی ردیف"
-                      aria-label="کپی ردیف"
+                      className="inline-flex items-center justify-center text-[rgba(0,0,0,0.45)] hover:text-[#0088ff] p-1.5 rounded transition-colors"
+                      title="Duplicate"
                     >
                       <Copy className="size-4" />
                     </button>
@@ -338,29 +365,21 @@ export function CbmCalculator() {
                       type="button"
                       onClick={() => removeRow(row.id)}
                       disabled={rows.length <= 1}
-                      className="touch-target inline-flex items-center justify-center text-[rgba(0,0,0,0.45)] hover:text-[#ff4d4f] p-1.5 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                      title="حذف ردیف"
-                      aria-label="حذف ردیف"
+                      className="inline-flex items-center justify-center text-[rgba(0,0,0,0.45)] hover:text-[#ff4d4f] p-1.5 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      title="Remove"
                     >
                       <Trash2 className="size-4" />
                     </button>
                   </div>
                 </div>
 
-                {/* یادداشت پالت */}
-                {isPallet && palletInfo.note && (
-                  <p className="text-[10px] text-[rgba(0,0,0,0.45)] mb-2 -mt-1">
-                    {palletInfo.note}
-                  </p>
-                )}
-
-                {/* فیلدها */}
+                {/* Dimension Inputs */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                   {isRound ? (
                     <>
                       <label className="block lg:col-span-1">
                         <span className="block text-[10px] text-[rgba(0,0,0,0.65)] mb-1">
-                          قطر ({UNIT_LABEL[unit]})
+                          {t.cbm.diameter} ({unitLabels[unit]})
                         </span>
                         <input
                           type="number"
@@ -372,7 +391,8 @@ export function CbmCalculator() {
                       </label>
                       <label className="block lg:col-span-1">
                         <span className="block text-[10px] text-[rgba(0,0,0,0.65)] mb-1">
-                          {info.roundSecond === "length" ? "طول رول" : "ارتفاع"} ({UNIT_LABEL[unit]})
+                          {info.roundSecond === "length" ? t.cbm.length : t.cbm.height} (
+                          {unitLabels[unit]})
                         </span>
                         <input
                           type="number"
@@ -393,7 +413,7 @@ export function CbmCalculator() {
                     <>
                       <label className="block lg:col-span-1">
                         <span className="block text-[10px] text-[rgba(0,0,0,0.65)] mb-1">
-                          طول ({UNIT_LABEL[unit]})
+                          {t.cbm.length} ({unitLabels[unit]})
                         </span>
                         <input
                           type="number"
@@ -405,7 +425,7 @@ export function CbmCalculator() {
                       </label>
                       <label className="block lg:col-span-1">
                         <span className="block text-[10px] text-[rgba(0,0,0,0.65)] mb-1">
-                          عرض ({UNIT_LABEL[unit]})
+                          {t.cbm.width} ({unitLabels[unit]})
                         </span>
                         <input
                           type="number"
@@ -417,7 +437,7 @@ export function CbmCalculator() {
                       </label>
                       <label className="block lg:col-span-1">
                         <span className="block text-[10px] text-[rgba(0,0,0,0.65)] mb-1">
-                          ارتفاع ({UNIT_LABEL[unit]})
+                          {t.cbm.height} ({unitLabels[unit]})
                         </span>
                         <input
                           type="number"
@@ -432,7 +452,7 @@ export function CbmCalculator() {
 
                   <label className="block lg:col-span-1">
                     <span className="block text-[10px] text-[rgba(0,0,0,0.65)] mb-1">
-                      وزن هر بسته (kg)
+                      {t.cbm.weightPerPkg}
                     </span>
                     <input
                       type="number"
@@ -445,7 +465,9 @@ export function CbmCalculator() {
                   </label>
 
                   <label className="block lg:col-span-1">
-                    <span className="block text-[10px] text-[rgba(0,0,0,0.65)] mb-1">تعداد</span>
+                    <span className="block text-[10px] text-[rgba(0,0,0,0.65)] mb-1">
+                      {t.cbm.quantity}
+                    </span>
                     <input
                       type="number"
                       min="0"
@@ -455,11 +477,11 @@ export function CbmCalculator() {
                     />
                   </label>
 
-                  {/* CBM هر بسته */}
+                  {/* Calculated CBM Output for Row */}
                   <div className="col-span-2 sm:col-span-3 lg:col-span-1 flex lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-1 bg-[#f6fbff] border border-[#d6eaff] rounded-sm px-2.5 py-1.5">
-                    <span className="text-[10px] text-[rgba(0,0,0,0.65)]">حجم کل ردیف</span>
+                    <span className="text-[10px] text-[rgba(0,0,0,0.65)]">{t.cbm.totalCbm}</span>
                     <span className="text-sm font-bold text-[#0088ff] tabular-nums">
-                      {res.valid ? `${faNumber(res.totalCbm, 3)} م³` : "—"}
+                      {res.valid ? `${formatNumber(res.totalCbm, 3)} m³` : "—"}
                     </span>
                   </div>
                 </div>
@@ -472,150 +494,91 @@ export function CbmCalculator() {
           <button
             type="button"
             onClick={addRow}
-            className="inline-flex items-center gap-1.5 text-xs text-[#0088ff] hover:text-[#40a9ff] px-3 py-2.5 rounded transition-colors active:bg-[#e6f7ff] min-h-[44px]"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-[#0088ff] hover:text-[#40a9ff] px-3 py-2 rounded-md hover:bg-[#e6f7ff] transition-colors"
           >
             <Plus className="size-4" />
-            افزودن قلم بار (پالت یا بسته)
+            {t.cbm.addPackage}
           </button>
         </div>
       </div>
 
-      {/* نتایج */}
-      <div className="bg-white border border-[#e8e8e8] rounded-sm">
+      {/* Aggregated Calculation Totals */}
+      <div className="bg-white border border-[#e8e8e8] rounded-sm shadow-xs">
         <div className="p-3 border-b border-[#e8e8e8] bg-[#fafafa] flex items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold text-[#15354e] whitespace-nowrap">نتیجه محاسبه CBM</h3>
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-[10px] text-[rgba(0,0,0,0.45)] whitespace-nowrap">
-              شیوه حمل: {selectedMode.fa}
-            </span>
+          <h3 className="text-sm font-semibold text-[#15354e]">{t.cbm.totalCbm}</h3>
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setProformaOpen(true)}
               disabled={!hasValid}
-              className="inline-flex items-center gap-1.5 text-[11px] px-3 py-2 rounded-sm bg-[#15354e] text-white font-medium hover:bg-[#1f4a6b] active:bg-[#12293c] transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[40px] whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-[#15354e] text-white font-medium hover:bg-[#1f4a6b] active:bg-[#12293c] transition-colors disabled:opacity-40"
             >
               <FileText className="size-3.5" />
-              صدور پیش‌فاکتور
+              {t.cbm.proformaBtn}
             </button>
           </div>
         </div>
 
-        <div className="p-3 grid grid-cols-2 lg:grid-cols-5 gap-3 stagger">
+        <div className="p-4 grid grid-cols-2 lg:grid-cols-5 gap-3">
           <div className="border border-[#e8e8e8] rounded-md p-3 text-center bg-[#fafafa]">
             <div className="flex items-center justify-center gap-1 text-xs text-[rgba(0,0,0,0.65)] mb-1.5">
               <Boxes className="size-3.5" />
-              تعداد اقلام
+              {t.cbm.quantity}
             </div>
             <div className="text-2xl font-bold text-[#15354e] tabular-nums">
-              {faNumber(totals.totalPackages)}
+              {formatNumber(totals.totalPackages)}
             </div>
           </div>
 
           <div className="border-2 border-[#0088ff] rounded-md p-3 text-center bg-[#e6f7ff]">
             <div className="flex items-center justify-center gap-1 text-xs text-[rgba(0,0,0,0.65)] mb-1.5">
               <Package className="size-3.5" />
-              حجم کل (CBM)
+              {t.cbm.totalCbm}
             </div>
             <div className="text-2xl font-bold text-[#0088ff] tabular-nums">
-              {faNumber(totals.totalCbm, 3)}
+              {formatNumber(totals.totalCbm, 3)}
             </div>
-            <div className="text-[10px] text-[rgba(0,0,0,0.45)] mt-0.5">متر مکعب</div>
+            <div className="text-[10px] text-[rgba(0,0,0,0.45)] mt-0.5">m³</div>
           </div>
 
           <div className="border border-[#e8e8e8] rounded-md p-3 text-center bg-[#fafafa]">
             <div className="flex items-center justify-center gap-1 text-xs text-[rgba(0,0,0,0.65)] mb-1.5">
               <Weight className="size-3.5" />
-              وزن واقعی
+              {t.cbm.totalWeight}
             </div>
             <div className="text-2xl font-bold text-[#15354e] tabular-nums">
-              {faNumber(Math.round(totals.totalWeight))}
+              {formatNumber(Math.round(totals.totalWeight))}
             </div>
-            <div className="text-[10px] text-[rgba(0,0,0,0.45)] mt-0.5">کیلوگرم</div>
+            <div className="text-[10px] text-[rgba(0,0,0,0.45)] mt-0.5">kg</div>
           </div>
 
           <div className="border border-[#e8e8e8] rounded-md p-3 text-center bg-[#fafafa]">
             <div className="flex items-center justify-center gap-1 text-xs text-[rgba(0,0,0,0.65)] mb-1.5">
               <Scale className="size-3.5" />
-              وزن حجمی
+              {t.cbm.volumetricWeight}
             </div>
             <div className="text-2xl font-bold text-[#faad14] tabular-nums">
-              {faNumber(Math.round(totals.volumetricWeight))}
+              {formatNumber(Math.round(totals.volumetricWeight))}
             </div>
             <div className="text-[10px] text-[rgba(0,0,0,0.45)] mt-0.5">
-              کیلوگرم (۱م³={faNumber(selectedMode.factor)}kg)
+              kg (1 m³ = {formatNumber(selectedMode.factor)} kg)
             </div>
           </div>
 
           <div className="col-span-2 lg:col-span-1 border-2 border-[#52c41a] rounded-md p-3 text-center bg-[#f6ffed]">
             <div className="flex items-center justify-center gap-1 text-xs text-[rgba(0,0,0,0.65)] mb-1.5">
               <CircleDollarSign className="size-3.5" />
-              وزن قابل احتساب
+              {t.cbm.chargeableWeight}
             </div>
             <div className="text-2xl font-bold text-[#52c41a] tabular-nums">
-              {faNumber(Math.round(totals.chargeableWeight))}
+              {formatNumber(Math.round(totals.chargeableWeight))}
             </div>
-            <div className="text-[10px] text-[rgba(0,0,0,0.45)] mt-0.5">
-              بیشینه وزن واقعی و حجمی
-            </div>
+            <div className="text-[10px] text-[rgba(0,0,0,0.45)] mt-0.5">kg</div>
           </div>
         </div>
-
-        {/* مقایسه شیوه‌های حمل - دسکتاپ؛ در موبایل کارت‌های بالا همین info را دارند (بدون اسکرول افقی) */}
-        {hasValid && (
-          <div className="hidden sm:block border-t border-[#f0f0f0] p-3">
-            <h4 className="text-xs font-semibold text-[#15354e] mb-2">
-              مقایسه وزن قابل احتساب در شیوه‌های حمل
-            </h4>
-            <div className="overflow-x-auto scrollbar-fa">
-              <table className="w-full text-xs min-w-[420px]">
-                <thead className="bg-[#fafafa] border-b border-[#e8e8e8]">
-                  <tr>
-                    <th className="text-right p-2 font-medium text-[rgba(0,0,0,0.65)]">شیوه حمل</th>
-                    <th className="text-right p-2 font-medium text-[rgba(0,0,0,0.65)]">ضریب</th>
-                    <th className="text-right p-2 font-medium text-[rgba(0,0,0,0.65)]">وزن حجمی</th>
-                    <th className="text-right p-2 font-medium text-[rgba(0,0,0,0.65)]">وزن قابل احتساب</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#f0f0f0]">
-                  {FREIGHT_MODES.map((m) => {
-                    const Icon = MODE_ICONS[m.icon];
-                    const t = totals.byMode[m.value];
-                    const active = m.value === mode;
-                    return (
-                      <tr
-                        key={m.value}
-                        className={cn("cursor-pointer transition-colors", active ? "bg-[#e6f7ff]" : "hover:bg-[#fafafa]")}
-                        onClick={() => setMode(m.value)}
-                      >
-                        <td className="p-2">
-                          <span className="inline-flex items-center gap-1.5 font-medium text-[#15354e]">
-                            <Icon className={cn("size-3.5", active ? "text-[#0088ff]" : "text-[rgba(0,0,0,0.45)]")} />
-                            {m.fa}
-                            {active && <span className="text-[9px] text-[#0088ff]">(انتخاب‌شده)</span>}
-                          </span>
-                        </td>
-                        <td className="p-2 tabular-nums text-[rgba(0,0,0,0.65)]">
-                          ۱م³ = {faNumber(m.factor)} kg
-                        </td>
-                        <td className="p-2 tabular-nums">{faNumber(Math.round(t.volumetric))} کیلوگرم</td>
-                        <td className={cn("p-2 tabular-nums font-bold", active ? "text-[#0088ff]" : "text-[#15354e]")}>
-                          {faNumber(Math.round(t.chargeable))} کیلوگرم
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <p className="hidden sm:block text-[10px] text-[rgba(0,0,0,0.45)] mt-2 leading-relaxed">
-              {selectedMode.hint}. وزن قابل احتساب مبنای محاسبه کرایه حمل است؛ هرگاه وزن حجمی از وزن واقعی بیشتر
-              شود، کرایه بر اساس وزن حجمی محاسبه می‌شود (W/M).
-            </p>
-          </div>
-        )}
       </div>
 
-      {/* پیش‌فاکتور */}
+      {/* Proforma Dialog */}
       {proformaOpen && (
         <ProformaDialog
           rows={rowsMm}
@@ -629,6 +592,8 @@ export function CbmCalculator() {
           }}
         />
       )}
+
+      {/* Proforma Print View */}
       {proformaData && (
         <ProformaPrint
           data={proformaData}

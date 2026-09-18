@@ -7,7 +7,21 @@ import { ContainersStep, getSelectedContainer } from "@/components/load-calculat
 import { ResultStep } from "@/components/load-calculator/result-step";
 import { CbmCalculator } from "@/components/load-calculator/cbm-calculator";
 import { calculateMultiStuffing, type MultiProductInput } from "@/lib/load-calculation";
-import { Ship, ChevronDown, Menu, X, Info, Boxes, Container as ContainerIcon } from "lucide-react";
+import { LanguageSelector } from "@/components/language-selector";
+import { useTranslation } from "@/i18n/context";
+import { CONTAINERS } from "@/lib/containers";
+import {
+  Ship,
+  ChevronDown,
+  Menu,
+  X,
+  Info,
+  Boxes,
+  Container as ContainerIcon,
+  HelpCircle,
+  Award,
+  Table as TableIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -17,30 +31,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-const STEPS = [
-  {
-    id: "products" as StepId,
-    index: 1,
-    title: "محصولات",
-    titleEn: "Products",
-    icon: null,
-  },
-  {
-    id: "containers" as StepId,
-    index: 2,
-    title: "کانتینرها و کامیون‌ها",
-    titleEn: "Containers & Trucks",
-    icon: null,
-  },
-  {
-    id: "result" as StepId,
-    index: 3,
-    title: "نتیجه چیدمان",
-    titleEn: "Stuffing Result",
-    icon: null,
-  },
-];
-
 type ToolMode = "load" | "cbm";
 
 interface HistoryState {
@@ -48,36 +38,20 @@ interface HistoryState {
   step: StepId;
 }
 
-// محتوای پایین صفحه - مطابق SeaRates
-const BENEFITS = [
-  {
-    title: "سود-مقرون‌به‌صرفه بودن",
-    desc: "ماشین‌حساب بار برای این طراحی شده که به شما نشان دهد چگونه بارهای کانتینری را محاسبه کنید تا بودجه حمل‌ونقل خود را در عمل بهینه‌سازی نمایید. در مصرف سوخت، عملیات بارگیری و تخلیه کانتینر، بسته‌بندی بار و کل زنجیره تأمین صرفه‌جویی کنید. اگر کسب‌وکار شما در تلاش است تا تجارت خود را توسعه دهد نه هزینه‌ها، اکنون یاد بگیرید چگونه بار را در کشتی یا کامیون محاسبه کنید.",
-  },
-  {
-    title: "بهینه‌سازی فضا و چیدمان",
-    desc: "فضا را به‌صورت اختصاصی محاسبه کنید. برای کانتینرهای استاندارد، یخچال‌دار، ۲۰ فوتی یا ۴۰ فوتی های‌کیوب، ماشین‌حساب ظرفیت بارگیری آماده ارائه راه‌حل‌های بهینه برای چیدمان با رمپ‌های بارگیری، قابلیت محاسبه پالت و... است. خود را به روش‌های استاندارد برای بارگیری کانتینر و کامیون محدود نکنید — گزینه‌های مناسب برای نیازهای اضافی بار شکننده و غیراستاندارد خود را دریافت کنید.",
-  },
-  {
-    title: "بصری‌سازی پیشرفته",
-    desc: "ماشین‌حساب آنلاین یک طرح ۳بعدی تعاملی با بصری‌سازی دقیق ارائه می‌دهد که مستقیماً متناسب با نیازهای شما تنظیم شده است. محاسبه‌گر چیدمان ۳بعدی اطمینان حاصل می‌کند که فرایند بارگیری و تخلیه کامیون یا کانتینر شما به‌خوبی پیش می‌رود. از روش‌های بارگیری ناکارآمد که هنگام تخلیه مشکل ایجاد می‌کنند پرهیز کنید. رویکرد فردی و کارآمد را با ویژگی‌های محاسبه‌گر بار ۳بعدی به‌کار ببرید.",
-  },
-];
-
 export default function Home() {
-  // حالت ابزار: چیدمان بار یا ماشین‌حساب CBM
+  const { t, formatNumber, isRtl } = useTranslation();
   const [toolMode, setToolMode] = useState<ToolMode>("load");
   const [currentStep, setCurrentStep] = useState<StepId>("products");
   const [maxReachedStep, setMaxReachedStep] = useState(0);
   const [groups, setGroups] = useState<Group[]>([
-    { id: "grp-1", name: "گروه ۱" },
+    { id: "grp-1", name: `${t.products.group} 1` },
   ]);
   const [products, setProducts] = useState<ProductRow[]>([
     {
       id: "prod-1",
       groupId: "grp-1",
       type: "Boxes",
-      name: "کارتن ۱",
+      name: `${t.products.item} 1`,
       length: "500",
       width: "400",
       height: "300",
@@ -91,7 +65,7 @@ export default function Home() {
       id: "prod-2",
       groupId: "grp-1",
       type: "Sacks",
-      name: "کیسه",
+      name: `${t.products.item} 2`,
       length: "1000",
       width: "450",
       height: "300",
@@ -105,7 +79,7 @@ export default function Home() {
       id: "prod-3",
       groupId: "grp-1",
       type: "Big bags",
-      name: "کیسه بزرگ",
+      name: `${t.products.item} 3`,
       length: "1000",
       width: "1000",
       height: "1000",
@@ -123,26 +97,52 @@ export default function Home() {
   const [navDir, setNavDir] = useState<"fwd" | "back">("fwd");
   const mainRef = useRef<HTMLElement>(null);
 
-  // ریست اسکرول داخلی هنگام تغییر ابزار/مرحله (اپ‌مانند)
+  // Dynamic steps based on current language
+  const steps = useMemo(
+    () => [
+      {
+        id: "products" as StepId,
+        index: 1,
+        title: t.steps.products,
+        icon: null,
+      },
+      {
+        id: "containers" as StepId,
+        index: 2,
+        title: t.steps.containers,
+        icon: null,
+      },
+      {
+        id: "result" as StepId,
+        index: 3,
+        title: t.steps.result,
+        icon: null,
+      },
+    ],
+    [t.steps]
+  );
+
+  // Reset scroll on step/mode transition
   useEffect(() => {
     mainRef.current?.scrollTo({ top: 0 });
   }, [toolMode, currentStep]);
 
-  /* ---------- پشتیبانی دکمه Back در WebView (دیوار/مایکت/مرورگر موبایل) ---------- */
+  // Support mobile back button history
   const skipPush = useRef(false);
 
   useEffect(() => {
-    // وضعیت اولیه بدون افزودن به استک
-    window.history.replaceState({ toolMode: "load", step: "products" } satisfies HistoryState, "");
+    window.history.replaceState(
+      { toolMode: "load", step: "products" } satisfies HistoryState,
+      ""
+    );
 
     const onPopState = (e: PopStateEvent) => {
       const s = e.state as HistoryState | null;
-      skipPush.current = true; // تغییر ناشی از Back است؛ دوباره push نکن
+      skipPush.current = true;
       if (s) {
         setToolMode(s.toolMode);
         if (s.toolMode === "load") setCurrentStep(s.step);
       } else {
-        // بازگشت به ابتدای استک
         setToolMode("load");
         setCurrentStep("products");
       }
@@ -152,7 +152,6 @@ export default function Home() {
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  // هر تغییر وضعیت ابزار/مرحله به history اضافه می‌شود تا دکمه Back طبیعی کار کند
   useEffect(() => {
     if (skipPush.current) {
       skipPush.current = false;
@@ -160,23 +159,23 @@ export default function Home() {
     }
     const s = window.history.state as HistoryState | null;
     if (s && s.toolMode === toolMode && (toolMode === "cbm" || s.step === currentStep)) {
-      return; // تغییری نیازی به ورودی جدید نیست
+      return;
     }
     window.history.pushState({ toolMode, step: currentStep } satisfies HistoryState, "");
   }, [toolMode, currentStep]);
 
   const goToStep = (step: StepId) => {
-    const idx = STEPS.findIndex((s) => s.id === step);
+    const idx = steps.findIndex((s) => s.id === step);
     if (idx <= maxReachedStep) {
-      setNavDir(idx < STEPS.findIndex((s) => s.id === currentStep) ? "back" : "fwd");
+      setNavDir(idx < steps.findIndex((s) => s.id === currentStep) ? "back" : "fwd");
       setCurrentStep(step);
     }
   };
 
   const next = () => {
-    const idx = STEPS.findIndex((s) => s.id === currentStep);
-    if (idx < STEPS.length - 1) {
-      const nextStep = STEPS[idx + 1];
+    const idx = steps.findIndex((s) => s.id === currentStep);
+    if (idx < steps.length - 1) {
+      const nextStep = steps[idx + 1];
       setNavDir("fwd");
       setCurrentStep(nextStep.id);
       setMaxReachedStep(Math.max(maxReachedStep, idx + 1));
@@ -184,10 +183,10 @@ export default function Home() {
   };
 
   const back = () => {
-    const idx = STEPS.findIndex((s) => s.id === currentStep);
+    const idx = steps.findIndex((s) => s.id === currentStep);
     if (idx > 0) {
       setNavDir("back");
-      setCurrentStep(STEPS[idx - 1].id);
+      setCurrentStep(steps[idx - 1].id);
     }
   };
 
@@ -196,7 +195,7 @@ export default function Home() {
     setMaxReachedStep(0);
   };
 
-  // محاسبه نتیجه - با useMemo
+  // Stuffing calculation
   const stuffingResult = useMemo(() => {
     if (currentStep !== "result") return null;
     const multiProducts: MultiProductInput[] = products.map((p) => ({
@@ -211,145 +210,190 @@ export default function Home() {
       stackable: p.stackable,
       maxStack: parseInt(p.maxStack) || 0,
     }));
-    const container = getSelectedContainer(selectedContainerId);
-    return calculateMultiStuffing(multiProducts, container);
+    const cont = getSelectedContainer(selectedContainerId);
+    return calculateMultiStuffing(multiProducts, cont);
   }, [currentStep, products, selectedContainerId]);
 
   const container = getSelectedContainer(selectedContainerId);
 
   return (
     <div className="flex flex-col h-[100dvh] overflow-hidden md:h-auto md:min-h-screen md:overflow-visible bg-[#f5f5f5]">
-      {/* هدر - بهینه برای موبایل با safe-area */}
+      {/* Header */}
       <header className="shrink-0 sticky top-0 z-30 bg-white border-b border-[#e8e8e8] safe-top">
         <div className="max-w-[1200px] mx-auto px-3 sm:px-6">
           <div className="flex items-center justify-between h-14">
-            {/* لوگو */}
+            {/* Logo */}
             <div className="flex items-center gap-2">
-              <div className="size-9 rounded-md bg-[#0088ff] flex items-center justify-center">
+              <div className="size-9 rounded-md bg-[#0088ff] flex items-center justify-center shadow-xs">
                 <Ship className="size-5 text-white" />
               </div>
               <div className="flex flex-col leading-tight">
-                <span className="text-sm font-bold text-[#15354e]">LoadCalc</span>
-                <span className="text-[10px] text-[rgba(0,0,0,0.45)] uppercase tracking-wide">فارسی</span>
+                <span className="text-sm font-bold text-[#15354e] tracking-tight">
+                  {t.nav.brand}
+                </span>
+                <span className="text-[10px] text-[rgba(0,0,0,0.45)] uppercase tracking-wider">
+                  {t.nav.subBrand}
+                </span>
               </div>
             </div>
 
-            {/* منوی دسکتاپ */}
-            <nav className="hidden md:flex items-center gap-6 text-sm">
-              <button className="flex items-center gap-1 text-[rgba(0,0,0,0.65)] hover:text-[#0088ff] transition-colors">
-                ابزارها
-                <ChevronDown className="size-3.5" />
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-4 text-sm">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#e6f7ff] text-[#0088ff] border border-[#91d5ff]/60 animate-pulse">
+                {t.nav.freeBadge}
+              </span>
+              <button
+                type="button"
+                onClick={() => setToolMode("load")}
+                className={cn(
+                  "transition-colors font-medium cursor-pointer",
+                  toolMode === "load" ? "text-[#0088ff]" : "text-[rgba(0,0,0,0.65)] hover:text-[#0088ff]"
+                )}
+              >
+                {t.nav.containerLoad}
               </button>
-              <button className="text-[rgba(0,0,0,0.65)] hover:text-[#0088ff] transition-colors">راهنما</button>
+              <button
+                type="button"
+                onClick={() => setToolMode("cbm")}
+                className={cn(
+                  "transition-colors font-medium cursor-pointer",
+                  toolMode === "cbm" ? "text-[#0088ff]" : "text-[rgba(0,0,0,0.65)] hover:text-[#0088ff]"
+                )}
+              >
+                {t.nav.cbmCalculator}
+              </button>
               <button
                 type="button"
                 onClick={() => setShowInfo(true)}
-                className="text-[#0088ff] font-medium transition-colors"
+                className="text-[rgba(0,0,0,0.65)] hover:text-[#0088ff] transition-colors cursor-pointer"
               >
-                درباره
+                {t.nav.guide}
               </button>
+              <a
+                href="https://zandesh.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-medium text-[rgba(0,0,0,0.55)] hover:text-[#0088ff] border-s border-[#e8e8e8] ps-3 transition-colors"
+              >
+                {t.nav.parentSite}
+              </a>
+              <LanguageSelector />
             </nav>
 
-            {/* دکمه موبایل */}
-            <button
-              type="button"
-              className="md:hidden inline-flex items-center justify-center size-10 text-[rgba(0,0,0,0.65)] hover:text-[#0088ff] rounded-md active:bg-black/5 transition-colors"
-              onClick={() => setMenuOpen(!menuOpen)}
-              aria-label={menuOpen ? "بستن منو" : "باز کردن منو"}
-              aria-expanded={menuOpen}
-            >
-              {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-            </button>
+            {/* Mobile Header Actions */}
+            <div className="flex items-center gap-2 md:hidden">
+              <LanguageSelector compact />
+              <button
+                type="button"
+                className="inline-flex items-center justify-center size-9 text-[rgba(0,0,0,0.65)] hover:text-[#0088ff] rounded-md active:bg-black/5 transition-colors"
+                onClick={() => setMenuOpen(!menuOpen)}
+                aria-label={menuOpen ? t.nav.closeMenu : t.nav.openMenu}
+                aria-expanded={menuOpen}
+              >
+                {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+              </button>
+            </div>
           </div>
 
-          {/* منوی موبایل */}
+          {/* Mobile Menu Dropdown */}
           {menuOpen && (
-            <nav className="md:hidden flex flex-col gap-1 py-2 border-t border-[#f0f0f0]">
+            <nav className="md:hidden flex flex-col gap-1 py-2 border-t border-[#f0f0f0] animate-in fade-in-50">
               <button
                 type="button"
                 onClick={() => {
-                  setShowInfo(true);
+                  setToolMode("load");
                   setMenuOpen(false);
                 }}
-                className="text-right text-sm text-[rgba(0,0,0,0.75)] py-3 px-2 rounded-md active:bg-black/5 transition-colors min-h-[44px]"
+                className="text-start text-sm text-[rgba(0,0,0,0.75)] py-2.5 px-2 rounded-md active:bg-black/5 transition-colors"
               >
-                راهنمای استفاده
+                {t.nav.containerLoad}
               </button>
               <button
                 type="button"
                 onClick={() => {
                   setToolMode("cbm");
                   setMenuOpen(false);
-                  window.scrollTo({ top: 0 });
                 }}
-                className="text-right text-sm text-[rgba(0,0,0,0.75)] py-3 px-2 rounded-md active:bg-black/5 transition-colors min-h-[44px]"
+                className="text-start text-sm text-[rgba(0,0,0,0.75)] py-2.5 px-2 rounded-md active:bg-black/5 transition-colors"
               >
-                ماشین‌حساب CBM
+                {t.nav.cbmCalculator}
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  setToolMode("load");
+                  setShowInfo(true);
                   setMenuOpen(false);
-                  window.scrollTo({ top: 0 });
                 }}
-                className="text-right text-sm text-[rgba(0,0,0,0.75)] py-3 px-2 rounded-md active:bg-black/5 transition-colors min-h-[44px]"
+                className="text-start text-sm text-[rgba(0,0,0,0.75)] py-2.5 px-2 rounded-md active:bg-black/5 transition-colors"
               >
-                چیدمان بار در کانتینر
+                {t.nav.guide}
               </button>
+              <a
+                href="https://zandesh.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-start text-sm text-[#0088ff] font-medium py-2.5 px-2 rounded-md active:bg-black/5 transition-colors border-t border-[#f0f0f0]"
+              >
+                {t.nav.parentSite} ↗
+              </a>
             </nav>
           )}
         </div>
       </header>
 
-      {/* عنوان صفحه - در موبایل کامپکت اپ‌مانند (بخش ثابت پوسته) */}
+      {/* Hero Header Section */}
       <div className="shrink-0 bg-white border-b border-[#e8e8e8]">
-        <div className="max-w-[1200px] mx-auto px-3 sm:px-6 py-2.5 sm:py-8">
-          <h1 className="text-base sm:text-3xl font-semibold text-[#15354e]">
-            محاسبه بار و چیدمان
-          </h1>
-          <p className="hidden sm:block text-[13px] sm:text-sm text-[rgba(0,0,0,0.65)] mt-1.5 sm:mt-2 max-w-3xl leading-relaxed">
-            ابزار هوشمند برای محاسبه بهینه چیدمان بار در کانتینر، کامیون و سایر وسایل نقلیه حمل.
-            بار خود را وارد کنید، نوع وسیله نقلیه را انتخاب کنید و چیدمان ۳بعدی بهینه را مشاهده کنید.
+        <div className="max-w-[1200px] mx-auto px-3 sm:px-6 py-3 sm:py-5">
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            <h1 className="text-base sm:text-2xl font-bold text-[#15354e]">{t.hero.title}</h1>
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-[#f6ffed] text-[#52c41a] border border-[#b7eb8f]">
+              100% Free
+            </span>
+          </div>
+          <p className="hidden sm:block text-xs sm:text-sm text-[rgba(0,0,0,0.65)] max-w-3xl leading-relaxed">
+            {t.hero.description}
           </p>
+          <div className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-[#0088ff] bg-[#e6f7ff] px-3 py-1.5 rounded-md border border-[#91d5ff]/50">
+            <span>{t.hero.freeHighlight}</span>
+          </div>
 
-          {/* انتخاب ابزار: دسکتاپ (در موبایل نوار پایین جایگزین است) */}
-          <div className="mt-4 sm:mt-5 hidden sm:inline-flex flex-wrap rounded-md border border-[#d9d9d9] overflow-hidden w-full sm:w-auto">
+          {/* Tool Mode Tabs (Desktop) */}
+          <div className="mt-3 sm:mt-4 hidden sm:inline-flex flex-wrap rounded-md border border-[#d9d9d9] overflow-hidden w-full sm:w-auto shadow-xs">
             <button
               type="button"
               onClick={() => setToolMode("load")}
               className={cn(
-                "flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm transition-colors",
+                "flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2 text-xs sm:text-sm font-medium transition-colors cursor-pointer",
                 toolMode === "load"
-                  ? "bg-[#0088ff] text-white font-medium"
+                  ? "bg-[#0088ff] text-white"
                   : "bg-white text-[rgba(0,0,0,0.65)] hover:text-[#0088ff]"
               )}
             >
               <ContainerIcon className="size-4" />
-              چیدمان بار در کانتینر
+              {t.hero.btnLoad}
             </button>
             <button
               type="button"
               onClick={() => setToolMode("cbm")}
               className={cn(
-                "flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm transition-colors border-r border-[#d9d9d9]",
+                "flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2 text-xs sm:text-sm font-medium transition-colors cursor-pointer border-s border-[#d9d9d9]",
                 toolMode === "cbm"
-                  ? "bg-[#0088ff] text-white font-medium"
+                  ? "bg-[#0088ff] text-white"
                   : "bg-white text-[rgba(0,0,0,0.65)] hover:text-[#0088ff]"
               )}
             >
               <Boxes className="size-4" />
-              ماشین‌حساب CBM
+              {t.hero.btnCbm}
             </button>
           </div>
         </div>
       </div>
 
-      {/* ویزارد استپر - ثابت زیر عنوان (فقط حالت چیدمان بار) */}
+      {/* Stepper (Only in Load Calculator Mode) */}
       {toolMode === "load" && (
-        <div className="shrink-0 w-full max-w-[1200px] mx-auto px-2.5 sm:px-6 pt-3 sm:pt-6">
+        <div className="shrink-0 w-full max-w-[1200px] mx-auto px-2.5 sm:px-6 pt-2 sm:pt-4">
           <WizardStepper
-            steps={STEPS}
+            steps={steps}
             currentStep={currentStep}
             onStepClick={goToStep}
             maxReachedStep={maxReachedStep}
@@ -357,7 +401,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* محتوای ابزار - در موبایل اسکرول داخلی (اپ‌مانند)، بدنه صفحه اسکرول عمودی ندارد */}
+      {/* Main Tool Content Container */}
       <main
         ref={mainRef}
         className="flex-1 min-h-0 overflow-y-auto overscroll-contain w-full max-w-[1200px] mx-auto px-2.5 sm:px-6 py-3 sm:py-6"
@@ -369,7 +413,10 @@ export default function Home() {
         ) : (
           <>
             {currentStep === "products" && (
-              <div key="products" className={navDir === "fwd" ? "animate-step-fwd" : "animate-step-back"}>
+              <div
+                key="products"
+                className={navDir === "fwd" ? "animate-step-fwd" : "animate-step-back"}
+              >
                 <ProductsStep
                   groups={groups}
                   products={products}
@@ -383,7 +430,10 @@ export default function Home() {
             )}
 
             {currentStep === "containers" && (
-              <div key="containers" className={navDir === "fwd" ? "animate-step-fwd" : "animate-step-back"}>
+              <div
+                key="containers"
+                className={navDir === "fwd" ? "animate-step-fwd" : "animate-step-back"}
+              >
                 <ContainersStep
                   selectedId={selectedContainerId}
                   onSelect={setSelectedContainerId}
@@ -394,7 +444,10 @@ export default function Home() {
             )}
 
             {currentStep === "result" && stuffingResult && (
-              <div key="result" className={navDir === "fwd" ? "animate-step-fwd" : "animate-step-back"}>
+              <div
+                key="result"
+                className={navDir === "fwd" ? "animate-step-fwd" : "animate-step-back"}
+              >
                 <ResultStep
                   result={stuffingResult}
                   container={container}
@@ -407,74 +460,169 @@ export default function Home() {
         )}
       </main>
 
-      {/* بخش محتوای پایین (سئو) - فقط دسکتاپ؛ در موبایل حذف برای حس اپ واقعی */}
-      <section className="hidden md:block bg-white border-t border-[#e8e8e8] mt-4">
-        <div className="max-w-[1200px] mx-auto px-3 sm:px-6 py-8 sm:py-12">
-          {/* سوالات متداول - شبیه اصلی */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-            <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-[#15354e] mb-3">
-                ماشین‌حساب بار کانتینر چیست؟
-              </h2>
-              <p className="text-sm text-[rgba(0,0,0,0.65)] leading-relaxed">
-                ماشین‌حساب برنامه بارگیری کانتینر، به دلیل نیاز و ویژگی‌های اختصاصی، چیدمان بار شما را در چند مرحله بهینه‌سازی می‌کند.
-                روش محاسباتی منحصربه‌فرد این ابزار یک سیستم بارگیری کانتینر را در اختیار شما قرار می‌دهد که با آن می‌توانید کل عملیات بارگیری و تخلیه را با هر نوع باری شامل کارتن، کیسه بزرگ، بشکه، فله و... پیش‌بینی کنید.
-              </p>
+      {/* Rich SEO Content Section (Desktop & Search Engine Crawlers) */}
+      <section className="hidden md:block bg-white border-t border-[#e8e8e8] mt-6">
+        <div className="max-w-[1200px] mx-auto px-3 sm:px-6 py-10">
+          {/* FAQ Accordion / Grid */}
+          <div className="mb-12">
+            <div className="flex items-center gap-2 mb-6">
+              <HelpCircle className="size-5 text-[#0088ff]" />
+              <h2 className="text-xl font-bold text-[#15354e]">{t.faq.title}</h2>
             </div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-[#15354e] mb-3">
-                چگونه بار کانتینر را محاسبه کنیم؟
-              </h2>
-              <p className="text-sm text-[rgba(0,0,0,0.65)] leading-relaxed">
-                به دنبال محاسبه‌گر ابعاد بار برای نیازهای عمومی هستید؟ به‌راحتی در ۳ مرحله از طریق ماشین‌حساب بارگیری کانتینر ۲۰ یا ۴۰ فوتی عبور کنید.
-                تعجب می‌کنید چگونه یک محاسبه بار برای حمل با الزامات سفارشی انجام دهید؟
-                عملکرد گسترده ابزار محاسبه را برای تنظیم فضا و محاسبه چیدمان کانتینر کاوش کنید.
-              </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="border border-[#e8e8e8] rounded-md p-5 bg-[#fafafa]">
+                <h3 className="text-sm font-bold text-[#15354e] mb-2">{t.faq.q1}</h3>
+                <p className="text-xs text-[rgba(0,0,0,0.65)] leading-relaxed">{t.faq.a1}</p>
+              </div>
+              <div className="border border-[#e8e8e8] rounded-md p-5 bg-[#fafafa]">
+                <h3 className="text-sm font-bold text-[#15354e] mb-2">{t.faq.q2}</h3>
+                <p className="text-xs text-[rgba(0,0,0,0.65)] leading-relaxed">{t.faq.a2}</p>
+              </div>
+              <div className="border border-[#e8e8e8] rounded-md p-5 bg-[#fafafa]">
+                <h3 className="text-sm font-bold text-[#15354e] mb-2">{t.faq.q3}</h3>
+                <p className="text-xs text-[rgba(0,0,0,0.65)] leading-relaxed">{t.faq.a3}</p>
+              </div>
+              <div className="border border-[#e8e8e8] rounded-md p-5 bg-[#fafafa]">
+                <h3 className="text-sm font-bold text-[#15354e] mb-2">{t.faq.q4}</h3>
+                <p className="text-xs text-[rgba(0,0,0,0.65)] leading-relaxed">{t.faq.a4}</p>
+              </div>
             </div>
           </div>
 
-          {/* مزایا - ۳ کارت */}
-          <h2 className="text-lg sm:text-xl font-semibold text-[#15354e] mb-5 text-center">
-            مزایای ماشین‌حساب چیدمان ۳بعدی کانتینر برای کسب‌وکار شما
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-            {BENEFITS.map((b, i) => (
-              <div
-                key={i}
-                className="border border-[#e8e8e8] rounded-md p-5 hover:shadow-md transition-shadow"
-              >
-                <div className="size-10 rounded-full bg-[#e6f7ff] flex items-center justify-center mb-3">
-                  <span className="text-[#0088ff] font-bold text-sm">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
+          {/* Standard Container Specifications Table for Google Answer Boxes */}
+          <div className="mb-12">
+            <div className="flex items-center gap-2 mb-4">
+              <TableIcon className="size-5 text-[#0088ff]" />
+              <h2 className="text-lg font-bold text-[#15354e]">{t.tableSpecs.title}</h2>
+            </div>
+            <div className="overflow-x-auto rounded-md border border-[#e8e8e8]">
+              <table className="w-full text-xs">
+                <thead className="bg-[#fafafa] border-b border-[#e8e8e8]">
+                  <tr>
+                    <th
+                      className={cn(
+                        "p-3 font-semibold text-[rgba(0,0,0,0.75)]",
+                        isRtl ? "text-right" : "text-left"
+                      )}
+                    >
+                      {t.tableSpecs.colType}
+                    </th>
+                    <th
+                      className={cn(
+                        "p-3 font-semibold text-[rgba(0,0,0,0.75)]",
+                        isRtl ? "text-right" : "text-left"
+                      )}
+                    >
+                      {t.tableSpecs.colInternal}
+                    </th>
+                    <th
+                      className={cn(
+                        "p-3 font-semibold text-[rgba(0,0,0,0.75)]",
+                        isRtl ? "text-right" : "text-left"
+                      )}
+                    >
+                      {t.tableSpecs.colVolume}
+                    </th>
+                    <th
+                      className={cn(
+                        "p-3 font-semibold text-[rgba(0,0,0,0.75)]",
+                        isRtl ? "text-right" : "text-left"
+                      )}
+                    >
+                      {t.tableSpecs.colPayload}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#f0f0f0]">
+                  {CONTAINERS.map((c) => (
+                    <tr key={c.id} className="hover:bg-[#fafafa]">
+                      <td className="p-3 font-medium text-[#15354e]">
+                        {t.containers.items[c.id]?.name || c.nameEn}
+                      </td>
+                      <td className="p-3 tabular-nums">
+                        {formatNumber(c.internalLength)} × {formatNumber(c.internalWidth)} ×{" "}
+                        {formatNumber(c.internalHeight)} cm
+                      </td>
+                      <td className="p-3 tabular-nums text-[#0088ff] font-medium">
+                        {formatNumber(c.capacity, 1)} m³
+                      </td>
+                      <td className="p-3 tabular-nums font-medium">
+                        {formatNumber(c.maxPayload)} kg
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Benefits Cards */}
+          <div>
+            <div className="flex items-center gap-2 mb-6">
+              <Award className="size-5 text-[#0088ff]" />
+              <h2 className="text-xl font-bold text-[#15354e]">{t.benefits.title}</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="border border-[#e8e8e8] rounded-md p-5 bg-white shadow-xs">
+                <div className="size-9 rounded-full bg-[#e6f7ff] text-[#0088ff] flex items-center justify-center font-bold text-sm mb-3">
+                  01
                 </div>
-                <h3 className="text-sm font-semibold text-[#15354e] mb-2">
-                  {b.title}
-                </h3>
+                <h3 className="text-sm font-bold text-[#15354e] mb-2">{t.benefits.b1Title}</h3>
                 <p className="text-xs text-[rgba(0,0,0,0.65)] leading-relaxed">
-                  {b.desc}
+                  {t.benefits.b1Desc}
                 </p>
               </div>
-            ))}
+              <div className="border border-[#e8e8e8] rounded-md p-5 bg-white shadow-xs">
+                <div className="size-9 rounded-full bg-[#e6f7ff] text-[#0088ff] flex items-center justify-center font-bold text-sm mb-3">
+                  02
+                </div>
+                <h3 className="text-sm font-bold text-[#15354e] mb-2">{t.benefits.b2Title}</h3>
+                <p className="text-xs text-[rgba(0,0,0,0.65)] leading-relaxed">
+                  {t.benefits.b2Desc}
+                </p>
+              </div>
+              <div className="border border-[#e8e8e8] rounded-md p-5 bg-white shadow-xs">
+                <div className="size-9 rounded-full bg-[#e6f7ff] text-[#0088ff] flex items-center justify-center font-bold text-sm mb-3">
+                  03
+                </div>
+                <h3 className="text-sm font-bold text-[#15354e] mb-2">{t.benefits.b3Title}</h3>
+                <p className="text-xs text-[rgba(0,0,0,0.65)] leading-relaxed">
+                  {t.benefits.b3Desc}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* فوتر - فقط دسکتاپ؛ موبایل اپ‌مانند بدون فوتر */}
+      {/* Footer (Desktop) */}
       <footer className="hidden md:block bg-[#15354e] text-white">
-        <div className="max-w-[1200px] mx-auto px-3 sm:px-6 py-3 sm:py-6 text-center text-xs sm:text-sm">
-          <p className="mb-1">
-            ماشین‌حساب بار و CBM فارسی — محاسبه حجم، وزن حجمی و چیدمان سه‌بعدی کانتینر و کامیون.
+        <div className="max-w-[1200px] mx-auto px-3 sm:px-6 py-6 text-center text-xs">
+          <p className="mb-1.5 font-medium">{t.footer.desc}</p>
+          <p className="text-white/60 text-[11px] max-w-2xl mx-auto leading-relaxed">
+            {t.footer.disclaimer}
           </p>
-          <p className="text-white/60 text-[10px] sm:text-xs">
-            تمامی محاسبات به صورت محلی در مرورگر شما انجام می‌شود. این ابزار جایگزین مشاوره تخصصی بارگیری نیست.
-          </p>
+          <div className="mt-3 flex items-center justify-center gap-3 text-white/50 text-[11px]">
+            <span>© {new Date().getFullYear()} Zandesh Logistics Group.</span>
+            <span>•</span>
+            <a
+              href="https://zandesh.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#40a9ff] hover:underline"
+            >
+              zandesh.com
+            </a>
+            <span>•</span>
+            <span>{t.footer.rights}</span>
+          </div>
         </div>
       </footer>
 
-      {/* نوار ناوبری پایین - مخصوص موبایل، درون جریان پوسته (نه fixed) */}
+      {/* Mobile Bottom Navigation Bar */}
       <nav
-        aria-label="ناوبری اصلی"
+        aria-label="Navigation"
         className="shrink-0 md:hidden bg-white border-t border-[#e8e8e8] safe-bottom shadow-[0_-2px_10px_rgba(0,0,0,0.04)]"
       >
         <div className="grid grid-cols-2 h-16 max-w-[560px] mx-auto">
@@ -487,9 +635,9 @@ export default function Home() {
             )}
             aria-current={toolMode === "load" ? "page" : undefined}
           >
-            <ContainerIcon className="size-[22px]" />
+            <ContainerIcon className="size-5" />
             <span className={cn("text-[10px]", toolMode === "load" && "font-semibold")}>
-              چیدمان بار
+              {t.nav.containerLoad}
             </span>
             <span
               className={cn(
@@ -507,9 +655,9 @@ export default function Home() {
             )}
             aria-current={toolMode === "cbm" ? "page" : undefined}
           >
-            <Boxes className="size-[22px]" />
+            <Boxes className="size-5" />
             <span className={cn("text-[10px]", toolMode === "cbm" && "font-semibold")}>
-              ماشین‌حساب CBM
+              {t.nav.cbmCalculator}
             </span>
             <span
               className={cn(
@@ -521,35 +669,37 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* مودال راهنما */}
+      {/* Guide / Info Modal */}
       <Dialog open={showInfo} onOpenChange={setShowInfo}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>راهنمای استفاده</DialogTitle>
-            <DialogDescription className="text-right leading-relaxed">
-              این ابزار به شما کمک می‌کند بهترین استفاده را از فضای کانتینر داشته باشید:
-              <br />
-              <br />
-              • <b>چیدمان بار:</b> محصولات و ابعادشان را وارد کنید، کانتینر یا کامیون را انتخاب کنید و چیدمان
-              سه‌بعدی بهینه را ببینید.
-              <br />
-              • <b>ماشین‌حساب CBM:</b> حجم هر بسته (پالت، کارتن، استوانه، رول، پاکت و...)، وزن حجمی و وزن قابل
-              احتساب هر شیوه حمل (دریایی، هوایی، زمینی، ریلی) را محاسبه کنید.
-              <br />• همه محاسبات روی گوشی شما و به‌صورت آفلاین انجام می‌شود.
+            <DialogTitle>{t.nav.guide}</DialogTitle>
+            <DialogDescription className="text-start leading-relaxed text-xs sm:text-sm mt-2 space-y-2">
+              <span className="block font-semibold text-[#15354e]">
+                • {t.hero.btnLoad}:
+              </span>
+              <span className="block text-[rgba(0,0,0,0.7)]">{t.containers.subtitle}</span>
+              <span className="block font-semibold text-[#15354e] pt-2">
+                • {t.hero.btnCbm}:
+              </span>
+              <span className="block text-[rgba(0,0,0,0.7)]">{t.cbm.subtitle}</span>
             </DialogDescription>
           </DialogHeader>
         </DialogContent>
       </Dialog>
 
-      {/* دکمه راهنما شناور - بالای نوار ناوبری در موبایل */}
+      {/* Floating Info Button */}
       <button
         type="button"
         onClick={() => setShowInfo(true)}
-        className="fixed left-3 sm:left-4 bottom-[calc(72px+env(safe-area-inset-bottom,0px))] md:bottom-4 size-11 rounded-full bg-[#0088ff] text-white shadow-lg flex items-center justify-center hover:bg-[#40a9ff] active:bg-[#007ae6] transition-colors z-30"
-        title="راهنما"
-        aria-label="راهنمای استفاده"
+        className={cn(
+          "fixed bottom-[calc(72px+env(safe-area-inset-bottom,0px))] md:bottom-4 size-10 rounded-full bg-[#0088ff] text-white shadow-lg flex items-center justify-center hover:bg-[#40a9ff] active:bg-[#007ae6] transition-colors z-30",
+          isRtl ? "left-3 sm:left-4" : "right-3 sm:right-4"
+        )}
+        title={t.nav.guide}
+        aria-label={t.nav.guide}
       >
-        <Info className="size-5" />
+        <Info className="size-4" />
       </button>
     </div>
   );

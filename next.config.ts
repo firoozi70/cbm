@@ -1,14 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
-  // امکان بیلد پروداکشن در پوشه جدا (NEXT_DIST_DIR) بدون تداخل با سرور dev
-  distDir: process.env.NEXT_DIST_DIR || ".next",
+  // Static export optimized for Cloudflare Workers & Cloudflare Pages edge distribution
+  output: "export",
+  images: {
+    unoptimized: true,
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
-  // حذف وابستگی‌های سنگین unused از bundle نهایی
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },
