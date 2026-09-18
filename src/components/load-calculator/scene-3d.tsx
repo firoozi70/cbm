@@ -4,7 +4,7 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, ContactShadows, Html } from "@react-three/drei";
 import * as THREE from "three";
-import { BoxInstance } from "@/lib/load-calculation";
+import { BoxInstance, PalletInstance } from "@/lib/load-calculation";
 import { ContainerSpec } from "@/lib/containers";
 import { useTranslation } from "@/i18n/context";
 import { RotateCw, Maximize, Play, Pause, Box as BoxIcon } from "lucide-react";
@@ -20,6 +20,87 @@ function easeOutBack(t: number): number {
 
 const dummy = new THREE.Object3D();
 const tmpColor = new THREE.Color();
+
+/* --------------------- پالت‌های چوبی سه‌بعدی کف کانتینر --------------------- */
+
+function PalletMeshes({
+  pallets,
+  container,
+}: {
+  pallets: PalletInstance[];
+  container: ContainerSpec;
+}) {
+  const cL = container.internalLength;
+  const cH = container.internalHeight;
+  const cW = container.internalWidth;
+
+  if (!pallets || pallets.length === 0) return null;
+
+  return (
+    <group>
+      {pallets.map((p) => {
+        // مرکز پالت در مختصات Three.js نسبت به مرکز کانتینر
+        const cx = p.x + p.l / 2 - cL / 2;
+        const cy = -cH / 2 + p.h / 2;
+        const cz = p.y + p.w / 2 - cW / 2;
+
+        return (
+          <group key={p.id} position={[cx, cy, cz]}>
+            {/* تخته‌های رویی پالت (۵ تخته چوبی موازی با فواصل استاندارد) */}
+            {[-0.4, -0.2, 0, 0.2, 0.4].map((offsetFactor, i) => (
+              <mesh
+                key={`top-${i}`}
+                position={[0, p.h / 2 - 1.1, offsetFactor * (p.w - 12)]}
+                castShadow
+                receiveShadow
+              >
+                <boxGeometry args={[p.l, 2.2, p.w * 0.16]} />
+                <meshStandardMaterial
+                  color="#d4a373"
+                  roughness={0.82}
+                  metalness={0.02}
+                />
+              </mesh>
+            ))}
+
+            {/* تیرک‌ها و بلوک‌های تکیه‌گاه پالت با شیار شاخک لیفتراک */}
+            {[-p.w / 2 + 5, 0, p.w / 2 - 5].map((zPos, i) => (
+              <mesh
+                key={`block-${i}`}
+                position={[0, 0, zPos]}
+                castShadow
+                receiveShadow
+              >
+                <boxGeometry args={[p.l, p.h - 4.4, 9]} />
+                <meshStandardMaterial
+                  color="#bc8a5f"
+                  roughness={0.88}
+                  metalness={0.02}
+                />
+              </mesh>
+            ))}
+
+            {/* تخته‌های زیرین پالت (۳ تخته در کف) */}
+            {[-p.w / 2 + 5, 0, p.w / 2 - 5].map((zPos, i) => (
+              <mesh
+                key={`bottom-${i}`}
+                position={[0, -p.h / 2 + 1.1, zPos]}
+                receiveShadow
+              >
+                <boxGeometry args={[p.l, 2.2, 11]} />
+                <meshStandardMaterial
+                  color="#a77338"
+                  roughness={0.85}
+                  metalness={0.02}
+                />
+              </mesh>
+            ))}
+          </group>
+        );
+      })}
+    </group>
+  );
+}
 
 /* --------------------- جعبه‌های بار (Instanced) --------------------- */
 
@@ -314,9 +395,11 @@ function detectWebGL(): boolean {
 export interface Scene3DProps {
   boxes: BoxInstance[];
   container: ContainerSpec;
+  pallets?: PalletInstance[];
+  usePallets?: boolean;
 }
 
-export default function Scene3D({ boxes, container }: Scene3DProps) {
+export default function Scene3D({ boxes, container, pallets, usePallets }: Scene3DProps) {
   const { formatNumber, locale } = useTranslation();
   const [resetKey, setResetKey] = useState(0);
   const [playKey, setPlayKey] = useState(0);
@@ -512,6 +595,9 @@ export default function Scene3D({ boxes, container }: Scene3DProps) {
 
         <group position={[0, 0, 0]}>
           <ContainerShell container={container} />
+          {pallets && pallets.length > 0 && (
+            <PalletMeshes pallets={pallets} container={container} />
+          )}
           {boxes.length > 0 && (
             <CargoBoxes
               boxes={boxes}
@@ -536,9 +622,15 @@ export default function Scene3D({ boxes, container }: Scene3DProps) {
       </Canvas>
       )}
 
-      {/* راهنمای رنگ‌ها */}
-      {boxes.length > 0 && (
+      {/* راهنمای رنگ‌ها و پالت‌ها */}
+      {(boxes.length > 0 || (pallets && pallets.length > 0)) && (
         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-t border-[#f0f0f0] px-3 py-2">
+          {pallets && pallets.length > 0 && (
+            <span className="inline-flex items-center gap-1.5 text-[10px] text-[#8c6239] font-medium tabular-nums bg-[#fbf6ee] px-2 py-0.5 rounded border border-[#e8d7c0]">
+              <span className="inline-block size-2.5 rounded-[2px] bg-[#cba16c] border border-[#a67941]" />
+              {formatNumber(pallets.length)} {locale === "fa" ? "پالت چوبی در کف" : "Floor Pallets"}
+            </span>
+          )}
           {Array.from(new Set(boxes.map((b) => b.productId))).map((pid) => {
             const b = boxes.find((x) => x.productId === pid)!;
             const count = boxes.filter((x) => x.productId === pid).length;

@@ -92,6 +92,16 @@ export interface ProductPlacement {
   orientationLabel: string;
 }
 
+export interface PalletInstance {
+  id: string;
+  x: number; // cm
+  y: number; // cm
+  z: number; // cm (floor = 0)
+  l: number; // cm
+  w: number; // cm
+  h: number; // cm
+}
+
 export interface StuffingResult {
   placements: ProductPlacement[];
   // جعبه‌های قرارگرفته برای رندر سه‌بعدی
@@ -99,6 +109,10 @@ export interface StuffingResult {
   // آیا جعبه‌ها برای رندر کاهش یافته‌اند؟
   boxesSampled: boolean;
   boxesShown: number;
+  // پالت‌های کف کانتینر
+  pallets?: PalletInstance[];
+  palletCount?: number;
+  usePallets?: boolean;
   // تعداد کل کارتن‌های جاگرفته
   totalPlaced: number;
   // تعداد کل کارتن‌های واردشده
@@ -111,6 +125,92 @@ export interface StuffingResult {
   warnings: string[];
   allFit: boolean;
 }
+
+export function generateFloorPallets(
+  cL: number,
+  cW: number,
+  palletType = "eur"
+): PalletInstance[] {
+  let pL = 120;
+  let pW = 80;
+  let pH = 14.4;
+
+  if (palletType === "eur2") {
+    pL = 120;
+    pW = 100;
+  } else if (palletType === "us") {
+    pL = 121.9;
+    pW = 101.6;
+    pH = 14.0;
+  } else if (palletType === "asia") {
+    pL = 110;
+    pW = 110;
+    pH = 13.0;
+  } else if (palletType === "asia2") {
+    pL = 130;
+    pW = 110;
+    pH = 13.0;
+  }
+
+  const pallets: PalletInstance[] = [];
+  const gap = 2; // cm فاصله ایمنی
+
+  // چیدمان ردیفی اولیه بر اساس طول و عرض پالت
+  const colsW = Math.max(1, Math.floor((cW + gap) / (pW + gap)));
+  const rowsL = Math.max(1, Math.floor((cL + gap) / (pL + gap)));
+
+  const usedW = colsW * pW + (colsW - 1) * gap;
+  const startY = Math.max(0, (cW - usedW) / 2);
+
+  let id = 1;
+  for (let r = 0; r < rowsL; r++) {
+    const x = r * (pL + gap);
+    for (let c = 0; c < colsW; c++) {
+      const y = startY + c * (pW + gap);
+      if (x + pL <= cL + 0.1 && y + pW <= cW + 0.1) {
+        pallets.push({
+          id: `plt-${id++}`,
+          x,
+          y,
+          z: 0,
+          l: pL,
+          w: pW,
+          h: pH,
+        });
+      }
+    }
+  }
+
+  // پر کردن فضای انتهای کانتینر با پالت چرخیده (در صورت امکان)
+  const remainingL = cL - (rowsL * (pL + gap));
+  if (remainingL >= pW) {
+    const turnedCols = Math.max(1, Math.floor((cW + gap) / (pL + gap)));
+    const turnedUsedW = turnedCols * pL + (turnedCols - 1) * gap;
+    const turnedStartY = Math.max(0, (cW - turnedUsedW) / 2);
+    const turnedRows = Math.max(1, Math.floor((remainingL + gap) / (pW + gap)));
+
+    for (let tr = 0; tr < turnedRows; tr++) {
+      const x = rowsL * (pL + gap) + tr * (pW + gap);
+      for (let tc = 0; tc < turnedCols; tc++) {
+        const y = turnedStartY + tc * (pL + gap);
+        if (x + pW <= cL + 0.1 && y + pL <= cW + 0.1) {
+          pallets.push({
+            id: `plt-${id++}`,
+            x,
+            y,
+            z: 0,
+            l: pW,
+            w: pL,
+            h: pH,
+          });
+        }
+      }
+    }
+  }
+
+  return pallets;
+}
+
 
 /* ------------------------------ ۶ حالت چرخش ------------------------------ */
 
@@ -185,11 +285,15 @@ function rectOverlap(
  */
 export function calculateMultiStuffing(
   products: MultiProductInput[],
-  container: CS
+  container: CS,
+  options?: { usePallets?: boolean; palletType?: string }
 ): StuffingResult {
   const warnings: string[] = [];
   const placements: ProductPlacement[] = [];
   const allBoxes: BoxInstance[] = [];
+
+  const usePallets = !!options?.usePallets;
+  const palletType = options?.palletType || "eur";
 
   // ابعاد کانتینر در cm
   const cL = container.internalLength;
@@ -197,6 +301,11 @@ export function calculateMultiStuffing(
   const cH = container.internalHeight;
   const containerVolume = (cL * cW * cH) / 1_000_000; // مترمکعب
   const containerMaxWeight = container.maxPayload;
+
+  // محاسبه پالت‌های کف کانتینر در صورت فعال بودن چیدمان پالت
+  const floorPallets = usePallets ? generateFloorPallets(cL, cW, palletType) : [];
+  const palletHeight = usePallets && floorPallets.length > 0 ? (floorPallets[0]?.h ?? 14.4) : 0;
+  const palletTareWeight = usePallets ? floorPallets.length * 25 : 0; // وزن هر پالت حدود ۲۵ کیلوگرم
 
   // مرتبسازی: چگالی نزولی (سنگین کف) سپس حجم نزولی
   const sorted = [...products]
@@ -210,17 +319,18 @@ export function calculateMultiStuffing(
       return volB - volA;
     });
 
-  let remainingWeight = containerMaxWeight;
-  let totalWeight = 0;
-  let totalVolumeCm3 = 0;
+  let remainingWeight = Math.max(0, containerMaxWeight - palletTareWeight);
+  let totalWeight = palletTareWeight;
+  let totalVolumeCm3 = usePallets ? floorPallets.reduce((acc, p) => acc + (p.l * p.w * p.h), 0) : 0;
   let totalPlaced = 0;
   let totalInput = 0;
   let seq = 0;
 
   // فضای اشغال‌شده جهانی بین همه محصولات (برای جلوگیری از همپوشانی)
   const globalPlaced: PlacedChunk[] = [];
+  const baseZ = palletHeight;
   const globalAnchors: { x: number; y: number; z: number }[] = [
-    { x: 0, y: 0, z: 0 },
+    { x: 0, y: 0, z: baseZ },
   ];
   const anchorKey = (a: { x: number; y: number; z: number }) =>
     `${Math.round(a.x * 10)}_${Math.round(a.y * 10)}_${Math.round(a.z * 10)}`;
@@ -307,7 +417,7 @@ export function calculateMultiStuffing(
         const chunk = queue.shift()!;
         // بررسی همپوشانی هم با بلوک‌های همین تلاش و هم با بلوک‌های جهانی محصولات قبلی
         const combined = placedChunks.length > 0 ? placedChunks.concat(globalPlaced) : globalPlaced;
-        const anchor = findAnchor(chunk, anchors, combined, cL, cW, cH, product);
+        const anchor = findAnchor(chunk, anchors, combined, cL, cW, cH, product, baseZ);
         if (anchor) {
           const placed: PlacedChunk = { ...chunk, x: anchor.x, y: anchor.y, z: anchor.z };
           placedChunks.push(placed);
@@ -468,6 +578,9 @@ export function calculateMultiStuffing(
     boxes,
     boxesSampled,
     boxesShown: boxes.length,
+    pallets: floorPallets,
+    palletCount: floorPallets.length,
+    usePallets,
     totalPlaced,
     totalInput,
     volumeUtilization,
@@ -488,7 +601,8 @@ function findAnchor(
   cL: number,
   cW: number,
   cH: number,
-  product: MultiProductInput
+  product: MultiProductInput,
+  baseZ = 0
 ): { x: number; y: number; z: number } | null {
   const dl = chunk.cols * chunk.effL;
   const dw = chunk.rows * chunk.effW;
@@ -504,8 +618,8 @@ function findAnchor(
     // محدوده کانتینر
     if (a.x + dl > cL + EPS || a.y + dw > cW + EPS || a.z + dh > cH + EPS) continue;
 
-    // محصولات غیرقابل چیدن فقط روی کف
-    if (!product.stackable && a.z > EPS) continue;
+    // محصولات غیرقابل چیدن فقط روی کف/سطح پالت
+    if (!product.stackable && a.z > baseZ + EPS) continue;
 
     // بررسی همپوشانی با بلوک‌های قرارگرفته
     let overlaps = false;
@@ -524,8 +638,8 @@ function findAnchor(
     }
     if (overlaps) continue;
 
-    // بررسی تکیه‌گاه: برای z > 0 باید ۸۵٪ کف بلوک تکیه‌گاه داشته باشد
-    if (a.z > EPS) {
+    // بررسی تکیه‌گاه: برای z > baseZ باید ۸۵٪ کف بلوک تکیه‌گاه داشته باشد
+    if (a.z > baseZ + EPS) {
       const footprint = dl * dw;
       let support = 0;
       for (const p of placed) {

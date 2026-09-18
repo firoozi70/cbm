@@ -2,6 +2,7 @@
 
 import { useRef, useState, type ChangeEvent } from "react";
 import { PRODUCT_TYPES } from "@/lib/containers";
+import { PALLET_TYPES, getPalletType } from "@/lib/cbm";
 import { useTranslation } from "@/i18n/context";
 import { Plus, Copy, Trash2, ChevronDown, Download, Upload, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -86,6 +87,8 @@ interface Props {
   setProducts: (p: ProductRow[]) => void;
   usePallets: boolean;
   setUsePallets: (v: boolean) => void;
+  palletType?: string;
+  setPalletType?: (v: string) => void;
   onNext: () => void;
   onBack?: () => void;
 }
@@ -103,6 +106,96 @@ const DEFAULT_COLORS = [
   "#2f54eb",
 ];
 
+function PalletIllustration({
+  lengthMm = 1200,
+  widthMm = 800,
+  heightMm = 144,
+}: {
+  lengthMm?: number;
+  widthMm?: number;
+  heightMm?: number;
+}) {
+  return (
+    <div className="relative flex flex-col items-center justify-center p-3 bg-[#fdfbf7] rounded-lg border border-[#ebd8c1] shadow-xs select-none w-full">
+      <svg
+        viewBox="0 0 280 160"
+        className="w-full max-w-[240px] h-auto drop-shadow-sm"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {/* Shadow under pallet */}
+        <ellipse cx="140" cy="142" rx="105" ry="13" fill="#000000" fillOpacity="0.08" />
+
+        {/* Bottom deck runners (3 runners) */}
+        <path d="M50 120 L95 138 L100 135 L55 117 Z" fill="#8c6239" />
+        <path d="M95 138 L200 102 L205 99 L100 135 Z" fill="#a67941" />
+        <path d="M85 108 L130 126 L135 123 L90 105 Z" fill="#8c6239" />
+        <path d="M130 126 L235 90 L240 87 L135 123 Z" fill="#a67941" />
+
+        {/* 9 Solid spacer blocks with forklift pockets */}
+        <path d="M50 108 L66 114 L66 120 L50 114 Z" fill="#8c6239" />
+        <path d="M66 114 L80 109 L80 115 L66 120 Z" fill="#a67941" />
+        <path d="M50 108 L66 114 L80 109 L64 103 Z" fill="#cba16c" />
+
+        <path d="M90 123 L106 129 L106 135 L90 129 Z" fill="#8c6239" />
+        <path d="M106 129 L120 124 L120 130 L106 135 Z" fill="#a67941" />
+        <path d="M90 123 L106 129 L120 124 L104 118 Z" fill="#cba16c" />
+
+        <path d="M190 89 L206 95 L206 101 L190 95 Z" fill="#8c6239" />
+        <path d="M206 95 L220 90 L220 96 L206 101 Z" fill="#a67941" />
+        <path d="M190 89 L206 95 L220 90 L204 84 Z" fill="#cba16c" />
+
+        <path d="M125 79 L141 85 L141 91 L125 85 Z" fill="#8c6239" />
+        <path d="M141 85 L155 80 L155 86 L141 91 Z" fill="#a67941" />
+        <path d="M125 79 L141 85 L155 80 L139 74 Z" fill="#cba16c" />
+
+        <path d="M225 55 L241 61 L241 67 L225 61 Z" fill="#8c6239" />
+        <path d="M241 61 L255 56 L255 62 L241 67 Z" fill="#a67941" />
+        <path d="M225 55 L241 61 L255 56 L239 50 Z" fill="#cba16c" />
+
+        {/* Stringer cross boards */}
+        <path d="M48 104 L105 126 L235 81 L178 59 Z" fill="#b98a54" opacity="0.4" />
+
+        {/* 5 Top Deck Slats */}
+        <path d="M45 100 L175 55 L190 60 L60 105 Z" fill="#d8af7a" stroke="#b3874f" strokeWidth="0.75" />
+        <path d="M45 100 L60 105 L60 108 L45 103 Z" fill="#a67941" />
+        <path d="M60 105 L190 60 L190 63 L60 108 Z" fill="#8c6239" />
+
+        <path d="M63 106 L193 61 L206 66 L76 111 Z" fill="#dfb784" stroke="#b3874f" strokeWidth="0.75" />
+        <path d="M63 106 L76 111 L76 114 L63 109 Z" fill="#a67941" />
+        <path d="M76 111 L206 66 L206 69 L76 114 Z" fill="#8c6239" />
+
+        <path d="M79 112 L209 67 L222 72 L92 117 Z" fill="#d8af7a" stroke="#b3874f" strokeWidth="0.75" />
+        <path d="M79 112 L92 117 L92 120 L79 115 Z" fill="#a67941" />
+        <path d="M92 117 L222 72 L222 75 L92 120 Z" fill="#8c6239" />
+
+        <path d="M95 118 L225 73 L238 78 L108 123 Z" fill="#dfb784" stroke="#b3874f" strokeWidth="0.75" />
+        <path d="M95 118 L108 123 L108 126 L95 121 Z" fill="#a67941" />
+        <path d="M108 123 L238 78 L238 81 L108 126 Z" fill="#8c6239" />
+
+        <path d="M111 124 L241 79 L254 84 L124 129 Z" fill="#d8af7a" stroke="#b3874f" strokeWidth="0.75" />
+        <path d="M111 124 L124 129 L124 132 L111 127 Z" fill="#a67941" />
+        <path d="M124 129 L254 84 L254 87 L124 132 Z" fill="#8c6239" />
+
+        {/* EUR / EPAL Stamp Markings */}
+        <rect x="68" y="115" width="8" height="4" rx="1" fill="#7a4e23" fillOpacity="0.7" />
+        <rect x="110" y="130" width="8" height="4" rx="1" fill="#7a4e23" fillOpacity="0.7" />
+
+        {/* Dimension indicator lines */}
+        <path d="M35 104 L165 59" stroke="#0088ff" strokeWidth="1.5" strokeDasharray="3 3" />
+        <path d="M172 52 L245 77" stroke="#52c41a" strokeWidth="1.5" strokeDasharray="3 3" />
+      </svg>
+
+      {/* Dimension badges */}
+      <div className="flex items-center justify-between w-full mt-2 pt-2 border-t border-[#ebd8c1] text-[11px] font-semibold text-[#8c6239] tabular-nums">
+        <span className="text-[#0088ff]">{lengthMm} mm L</span>
+        <span className="text-[#52c41a]">{widthMm} mm W</span>
+        <span className="text-[#b97a38]">{heightMm} mm H</span>
+      </div>
+    </div>
+  );
+}
+
 export function ProductsStep({
   groups,
   products,
@@ -110,10 +203,15 @@ export function ProductsStep({
   setProducts,
   usePallets,
   setUsePallets,
+  palletType = "eur",
+  setPalletType,
   onNext,
 }: Props) {
   const { t, formatNumber, isRtl, locale } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const currentPallet = getPalletType(palletType || "eur");
+  const showPalletSection = usePallets || products.some((p) => p.type === "Pallets");
 
   const addGroup = () => {
     const newGroup: Group = {
@@ -622,6 +720,113 @@ export function ProductsStep({
           </div>
         );
       })}
+
+      {/* Pallet Configuration & Preview Card (Appears under cargo when usePallets is enabled or Pallet type is selected) */}
+      {showPalletSection && (
+        <div className="m-3 sm:m-4 p-4 rounded-lg border-2 border-[#ebd8c1] bg-[#fdfbf7] shadow-xs">
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            {/* Visual Pallet Diagram / Image */}
+            <div className="w-full md:w-[260px] shrink-0">
+              <PalletIllustration
+                lengthMm={currentPallet.length || 1200}
+                widthMm={currentPallet.width || 800}
+                heightMm={144}
+              />
+              <div className="text-center mt-2">
+                <span className="inline-block px-2.5 py-0.5 text-xs font-bold text-[#8c6239] bg-[#f4e8da] rounded-full border border-[#d8be9b]">
+                  {currentPallet.en} • {currentPallet.length || 1200} × {currentPallet.width || 800} × 144 mm
+                </span>
+              </div>
+            </div>
+
+            {/* Pallet Standard Selector & Details */}
+            <div className="flex-1 w-full space-y-3">
+              <div className="flex items-center justify-between border-b border-[#ebd8c1] pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="size-2.5 rounded-full bg-[#d4a373]" />
+                  <h4 className="text-sm font-bold text-[#4a3018]">
+                    {locale === "fa"
+                      ? "مشخصات و ابعاد پالت استاندارد"
+                      : locale === "ar"
+                      ? "مواصفات ومعايير الطبلية الخشبية"
+                      : "Standard Wooden Pallet Specifications"}
+                  </h4>
+                </div>
+                <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-[#8c6239] hover:text-[#5c3e21]">
+                  <input
+                    type="checkbox"
+                    checked={usePallets}
+                    onChange={(e) => setUsePallets(e.target.checked)}
+                    className="size-4 accent-[#8c6239] rounded"
+                  />
+                  {locale === "fa" ? "فعال‌سازی چیدمان پالت روی کف" : "Enable floor pallet loading"}
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-[rgba(0,0,0,0.65)] mb-1">
+                    {locale === "fa"
+                      ? "نوع استاندارد پالت:"
+                      : locale === "ar"
+                      ? "نوع الطبلية القياسية:"
+                      : "Pallet Standard:"}
+                  </label>
+                  <select
+                    value={palletType}
+                    onChange={(e) => setPalletType && setPalletType(e.target.value)}
+                    className="w-full h-9 px-3 text-xs sm:text-sm font-medium bg-white border border-[#d8be9b] rounded-md focus:outline-none focus:border-[#8c6239] focus:ring-1 focus:ring-[#8c6239] text-[#2c1d0f]"
+                  >
+                    {PALLET_TYPES.map((pt) => (
+                      <option key={pt.value} value={pt.value}>
+                        {pt.en} {pt.length > 0 ? `(${pt.length} × ${pt.width} mm)` : ""} - {locale === "fa" ? pt.fa : pt.en}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-white p-2 rounded border border-[#ebd8c1] text-center">
+                    <div className="text-[10px] text-[rgba(0,0,0,0.45)]">
+                      {locale === "fa" ? "طول" : "Length"}
+                    </div>
+                    <div className="text-xs font-bold text-[#4a3018] tabular-nums">
+                      {formatNumber(currentPallet.length || 1200)} mm
+                    </div>
+                  </div>
+                  <div className="bg-white p-2 rounded border border-[#ebd8c1] text-center">
+                    <div className="text-[10px] text-[rgba(0,0,0,0.45)]">
+                      {locale === "fa" ? "عرض" : "Width"}
+                    </div>
+                    <div className="text-xs font-bold text-[#4a3018] tabular-nums">
+                      {formatNumber(currentPallet.width || 800)} mm
+                    </div>
+                  </div>
+                  <div className="bg-white p-2 rounded border border-[#ebd8c1] text-center">
+                    <div className="text-[10px] text-[rgba(0,0,0,0.45)]">
+                      {locale === "fa" ? "ارتفاع" : "Height"}
+                    </div>
+                    <div className="text-xs font-bold text-[#4a3018] tabular-nums">
+                      144 mm
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between text-xs text-[#705233] bg-[#f7efdc] p-2 rounded border border-[#e6d3ba] gap-2">
+                <span>
+                  {locale === "fa"
+                    ? "⚖️ وزن خالص پالت: ۲۵ کیلوگرم | بارها مستقیماً روی رویه چوبی پالت چیده می‌شوند"
+                    : "⚖️ Pallet Tare: 25 kg | Goods are loaded directly onto pallet surface"}
+                </span>
+                <span className="font-medium text-[#4a3018]">
+                  {currentPallet.note && (locale === "fa" ? currentPallet.note : currentPallet.en)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer / Next Step */}
       <div className="flex items-center justify-end gap-3 p-4 border-t border-[#e8e8e8] bg-[#fafafa]">

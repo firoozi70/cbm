@@ -25,6 +25,7 @@ interface Props {
   result: StuffingResult;
   container: ContainerSpec;
   products?: ProductRow[];
+  usePallets?: boolean;
   onBack: () => void;
   onRestart: () => void;
 }
@@ -42,7 +43,7 @@ const Scene3D = dynamic(() => import("./scene-3d"), {
   ),
 });
 
-export function ResultStep({ result, container, products, onBack, onRestart }: Props) {
+export function ResultStep({ result, container, products, usePallets, onBack, onRestart }: Props) {
   const { t, formatNumber, isRtl, locale } = useTranslation();
   const containerName = t.containers.items[container.id]?.name || container.nameEn;
 
@@ -255,13 +256,35 @@ export function ResultStep({ result, container, products, onBack, onRestart }: P
           </div>
         )}
 
+        {/* Pallet Floor Info Banner */}
+        {result.pallets && result.pallets.length > 0 && (
+          <div className="flex items-center justify-between gap-2 p-3 rounded-md bg-[#fdfbf7] border border-[#ebd8c1] text-xs sm:text-sm text-[#5c3e21]">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🪵</span>
+              <span className="font-semibold">
+                {locale === "fa"
+                  ? `${formatNumber(result.pallets.length)} عدد پالت چوبی استاندارد در کف کانتینر زیر بارها چیده شد.`
+                  : `${formatNumber(result.pallets.length)} standard wooden pallets positioned beneath cargo on container floor.`}
+              </span>
+            </div>
+            <span className="text-xs bg-[#f4e8da] text-[#8c6239] px-2.5 py-1 rounded-full font-bold border border-[#d8be9b]">
+              {formatNumber(result.pallets.length * 25)} kg {locale === "fa" ? "وزن پالت‌ها" : "pallet tare"}
+            </span>
+          </div>
+        )}
+
         {/* 3D Visualizer Canvas */}
         <div className="border border-[#e8e8e8] rounded-md overflow-hidden bg-white">
           <div className="px-3 py-2 bg-[#fafafa] border-b border-[#e8e8e8] flex items-center justify-between">
             <h4 className="text-xs font-semibold text-[#15354e]">{t.result.stepByStep}</h4>
           </div>
           {result.totalPlaced > 0 ? (
-            <Scene3D boxes={result.boxes} container={container} />
+            <Scene3D
+              boxes={result.boxes}
+              container={container}
+              pallets={result.pallets}
+              usePallets={usePallets || Boolean(result.pallets && result.pallets.length > 0)}
+            />
           ) : (
             <div className="text-center py-12 text-[rgba(0,0,0,0.45)]">
               <AlertTriangle className="size-10 mx-auto mb-2" />

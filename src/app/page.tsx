@@ -103,6 +103,7 @@ export default function Home() {
     },
   ]);
   const [usePallets, setUsePallets] = useState(false);
+  const [palletType, setPalletType] = useState("eur");
   const [selectedContainerId, setSelectedContainerId] = useState("40ft-std");
   const [showInfo, setShowInfo] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -244,8 +245,8 @@ export default function Home() {
       maxStack: parseInt(p.maxStack) || 0,
     }));
     const cont = getSelectedContainer(selectedContainerId);
-    return calculateMultiStuffing(multiProducts, cont);
-  }, [currentStep, products, selectedContainerId, t, locale, formatNumber]);
+    return calculateMultiStuffing(multiProducts, cont, { usePallets, palletType });
+  }, [currentStep, products, selectedContainerId, usePallets, palletType, t, locale, formatNumber]);
 
   const container = getSelectedContainer(selectedContainerId);
 
@@ -472,6 +473,8 @@ export default function Home() {
                   setProducts={setProducts}
                   usePallets={usePallets}
                   setUsePallets={setUsePallets}
+                  palletType={palletType}
+                  setPalletType={setPalletType}
                   onNext={next}
                 />
               </div>
@@ -500,6 +503,7 @@ export default function Home() {
                   result={stuffingResult}
                   container={container}
                   products={products}
+                  usePallets={usePallets}
                   onBack={back}
                   onRestart={restart}
                 />
